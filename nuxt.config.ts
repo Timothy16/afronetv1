@@ -7,13 +7,14 @@ export default defineNuxtConfig({
     strict: true
   },
   routeRules: {
+    // Open CORS without credentials: cross-origin callers can't ride the session
+    // cookie. ('*' with Allow-Credentials is rejected by browsers anyway.)
     '/api/**': {
       cors: true,
       headers: {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,HEAD',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-api-key',
-        'Access-Control-Allow-Credentials': 'true',
         'Access-Control-Max-Age': '86400'
       }
     }
@@ -43,6 +44,8 @@ export default defineNuxtConfig({
         },
       ],
       link: [
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'apple-touch-icon', href: '/favicon.png' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {

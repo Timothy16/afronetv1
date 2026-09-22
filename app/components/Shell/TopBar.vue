@@ -45,8 +45,11 @@
       <UiIconButton label="Apps" @click="launcherOpen = true">
         <i class="fa-solid fa-grip text-[16px]" aria-hidden="true"></i>
       </UiIconButton>
+      <UiIconButton label="Sign out" :disabled="signingOut" @click="signOut">
+        <i class="fa-solid fa-right-from-bracket text-[16px]" aria-hidden="true"></i>
+      </UiIconButton>
       <NuxtLink to="/profile" aria-label="African ID" class="ml-1">
-        <UiAvatar :src="me.avatar" :name="me.name" :size="30" />
+        <UiAvatar :src="avatarUrl" :name="userStore.fullName || 'Afronet user'" :size="30" />
       </NuxtLink>
     </div>
   </header>
@@ -56,9 +59,22 @@
 </template>
 
 <script setup>
-import { me } from '~/data/people'
+import { useAfronetUserStore } from '~/stores/afronetUser'
 
 const { unread } = useAfronet()
+const userStore = useAfronetUserStore()
+const { getImageUrl } = useGoogleCloud()
+
+// No image yet -> empty src, so UiAvatar falls back to initials
+const avatarUrl = computed(() => (userStore.user?.profileImage ? getImageUrl(userStore.user.profileImage) : ''))
+
+const signingOut = ref(false)
+const signOut = async () => {
+  signingOut.value = true
+  const ok = await userStore.logout()
+  signingOut.value = false
+  if (ok) await navigateTo('/welcome')
+}
 const route = useRoute()
 
 const notifOpen = ref(false)

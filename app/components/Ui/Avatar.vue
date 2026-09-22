@@ -2,7 +2,17 @@
 
 <template>
   <span class="relative inline-block shrink-0" :style="{ width: `${size}px`, height: `${size}px` }">
-    <img :src="src" :alt="name" :width="size" :height="size" class="h-full w-full rounded-full object-cover" />
+    <img v-if="src" :src="src" :alt="name" :width="size" :height="size" class="h-full w-full rounded-full object-cover" />
+    <!-- No image yet: initials on the brand tint -->
+    <span
+      v-else
+      role="img"
+      :aria-label="name"
+      class="flex h-full w-full items-center justify-center rounded-full bg-[#eaf3ee] font-medium text-[#0b5d3e]"
+      :style="{ fontSize: `${Math.round(size * 0.38)}px` }"
+    >
+      {{ initials }}
+    </span>
     <span
       v-if="presence"
       aria-hidden="true"
@@ -15,7 +25,7 @@
 
 <script setup>
 const props = defineProps({
-  src: { type: String, required: true },
+  src: { type: String, default: '' },
   name: { type: String, required: true },
   size: { type: Number, default: 40 },
   // afronet | both | internet | offline | dnd
@@ -31,4 +41,13 @@ const presenceColor = {
 }
 
 const dot = computed(() => Math.max(9, props.size * 0.28))
+
+const initials = computed(() =>
+  props.name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join(''),
+)
 </script>
