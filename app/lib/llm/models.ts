@@ -80,14 +80,12 @@ export const SMOLLM2_360M = smollm2(
     true, // 30/30 on a real phone
 )
 
-/**
- * For laptops with a graphics chip. Selectable so it can be tested, but marked unverified until
- * it passes the same 30-question run: set `verified` to true above once it does.
- */
+/** For laptops with a graphics chip. Passed its 30-question run on a laptop with no crashes. */
 export const SMOLLM2_1_7B = smollm2(
     'smollm2-1.7b', 'SmolLM2 1.7B', 'HuggingFaceTB/SmolLM2-1.7B-Instruct',
     '31b70e2e869a7173562077fd711b654946d38674', 'laptops',
     { int8: 1_714_119_778, q4: 1_411_969_607, q4f16: 1_108_730_338 },
+    true,
 )
 
 /** Models the picker offers. */

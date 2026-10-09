@@ -26,11 +26,11 @@
     >
       <div
         v-if="open"
-        class="absolute right-0 top-full z-40 mt-1 w-[20rem] rounded-2xl border border-[#e4e4de] bg-[#ffffff] p-4 shadow-[0_2px_4px_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(0,0,0,0.28)]"
+        class="fixed inset-x-3 top-[3.75rem] z-40 rounded-2xl border border-[#e4e4de] bg-[#ffffff] p-4 shadow-[0_2px_4px_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(0,0,0,0.28)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1 sm:w-[20rem]"
       >
         <p class="text-[13px] font-medium text-[#121614]">AfroIntel on this device</p>
 
-        <dl class="mt-2 space-y-1 text-[12px]">
+        <dl class="mt-2 space-y-1 text-[12px] sm:text-[12px]">
           <div v-for="row in rows" :key="row.k" class="flex gap-2">
             <dt class="w-28 shrink-0 text-[#8f9792]">{{ row.k }}</dt>
             <dd class="min-w-0 flex-1 break-words text-[#121614]">{{ row.v }}</dd>

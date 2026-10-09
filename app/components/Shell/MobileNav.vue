@@ -39,7 +39,7 @@ const route = useRoute()
 const launcher = ref(false)
 
 const items = [
-  { to: '/', label: 'Home', icon: 'fa-house' },
+  { to: '/home', label: 'Home', icon: 'fa-house' },
   { to: '/workspace', label: 'AI', icon: 'fa-wand-magic-sparkles' },
   { to: '/social', label: 'Social', icon: 'fa-users' },
 ]

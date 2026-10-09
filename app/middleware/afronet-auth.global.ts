@@ -9,12 +9,19 @@ export default defineNuxtRouteMiddleware(async (to) => {
         await userStore.fetchProfile()
     }
 
-    // /welcome and its children (e.g. /welcome/verify/:token) are the guest area
+    // /welcome and its children (e.g. /welcome/verify/:token) are the sign-in area
     const isWelcome = to.path === '/welcome' || to.path.startsWith('/welcome/')
 
-    // Not logged in -> only the guest area is allowed
+    // The public front door: the landing page, the intro stepper and the 404 page are open to
+    // everyone, signed in or not. Without this a visitor would be bounced straight to /welcome
+    // and could never read the landing page at all.
+    // The catch-all page too, so a visitor gets the real 404 instead of being bounced to sign-in.
+    const isNotFound = typeof to.name === 'string' && to.name.startsWith('slug')
+    const isPublic = to.path === '/' || to.path === '/explore' || to.path.startsWith('/explore/') || isNotFound
+
+    // Not logged in -> only the public pages and the sign-in area
     if (!userStore.isAuthenticated) {
-        return isWelcome ? undefined : navigateTo('/welcome')
+        return isWelcome || isPublic ? undefined : navigateTo('/welcome')
     }
 
     // Logged in but no verified African ID yet -> only the verification page is allowed
@@ -23,9 +30,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
     //     return isVerifyId ? undefined : navigateTo('/verify-id')
     // }
 
-    // Logged in and verified, but on the guest or verification page -> send home
+    // Logged in and verified, but on the sign-in page -> the chat, which is where signing in
+    // lands. Other app pages stay reachable by typing their address.
     // if (isWelcome || isVerifyId) {
     if (isWelcome) {
-        return navigateTo('/')
+        return navigateTo('/chat', { external: true })
     }
 })

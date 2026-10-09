@@ -21,13 +21,14 @@
 
     <Transition
       enter-active-class="transition-[opacity,transform] duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
-      enter-from-class="-translate-y-1.5 scale-[0.98] opacity-0"
+      enter-from-class="scale-[0.98] opacity-0"
       leave-active-class="transition-[opacity,transform] duration-[160ms] ease-[cubic-bezier(0.23,1,0.32,1)]"
-      leave-to-class="-translate-y-1 scale-[0.98] opacity-0"
+      leave-to-class="scale-[0.98] opacity-0"
     >
       <div
         v-if="open"
-        class="absolute left-0 top-full z-40 mt-1 w-[19rem] rounded-2xl border border-[#e4e4de] bg-[#ffffff] p-1.5 shadow-[0_2px_4px_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(0,0,0,0.28)]"
+        class="absolute left-1/2 z-40 w-[min(19rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-2xl border border-[#e4e4de] bg-[#ffffff] p-1.5 shadow-[0_2px_4px_rgba(0,0,0,0.04),0_24px_48px_-24px_rgba(0,0,0,0.28)] sm:left-0 sm:translate-x-0"
+        :class="placement === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'"
       >
         <p class="px-2.5 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-[#8f9792]">
           AI on this device
@@ -39,12 +40,7 @@
               <AiIcon v-if="o.current" name="check" :size="14" />
             </span>
             <div class="min-w-0 flex-1">
-              <p class="flex flex-wrap items-center gap-1.5 text-[13px] font-medium text-[#121614]">
-                {{ o.spec.label }}
-                <span v-if="!o.spec.verified" class="rounded-full bg-[#b07f15]/10 px-1.5 py-0.5 text-[10px] font-medium text-[#b07f15]">
-                  Not tested yet
-                </span>
-              </p>
+              <p class="text-[13px] font-medium text-[#121614]">{{ o.spec.label }}</p>
               <p class="mt-0.5 text-[12px] leading-relaxed text-[#606863]">
                 Recommended for {{ o.spec.recommendedFor }} ·
                 <template v-if="!o.runnable">can't run on this device</template>
@@ -94,6 +90,8 @@ import { formatBytes } from '~/lib/deviceStorage'
 
 defineProps({
   generating: { type: Boolean, default: false },
+  // 'up' for the copy under the input on phones, where a panel below would fall off-screen.
+  placement: { type: String, default: 'down' },
 })
 
 const { model, modelOptions, switchModel, deleteModel } = useLLM()

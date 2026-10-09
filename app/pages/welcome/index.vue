@@ -8,23 +8,37 @@
 <template>
   <div>
     <!-- Welcome -->
-    <div v-if="stage === 'welcome'" class="flex min-h-[100dvh] w-full items-center justify-center bg-[#ffffff] px-5 py-20">
-      <div class="rise w-full max-w-md text-center">
-        <BrandMark :size="44" class="mx-auto" />
-        <h1 class="mt-6 font-['Instrument_Serif',Georgia,serif] text-[38px] leading-tight text-[#121614]">
-          Welcome to Afronet
-        </h1>
-        <p class="mt-3 text-[15px] leading-relaxed text-[#606863]">
-          One identity. One African network. A new digital world — with or without the internet.
-        </p>
-        <div class="mt-8 space-y-2.5">
-          <UiButton block size="lg" @click="setStage('register')">Create African ID</UiButton>
-          <UiButton block size="lg" variant="secondary" @click="setStage('signin')">Sign in</UiButton>
+    <div v-if="stage === 'welcome'" class="min-h-[100dvh] w-full bg-[#ffffff] lg:grid lg:grid-cols-2">
+      <!-- Greeting panel: full width on a phone, the left half on a desktop -->
+      <div class="lg:flex lg:flex-col lg:justify-center">
+        <LandingGreeting class="lg:min-h-[100dvh] lg:justify-center" />
+      </div>
+
+      <div class="flex items-center justify-center px-5 py-12 sm:py-16">
+        <div class="rise w-full max-w-md">
+          <h1 class="font-['Instrument_Serif',Georgia,serif] text-[32px] leading-tight text-[#121614] sm:text-[38px]">
+            {{ welcomeIntro.title }}
+          </h1>
+          <p class="mt-3 text-[15px] leading-relaxed text-[#606863]">{{ welcomeIntro.body }}</p>
+
+          <div class="mt-8 space-y-2.5">
+            <UiButton block size="lg" @click="setStage('register')">Create African ID</UiButton>
+            <UiButton block size="lg" variant="secondary" @click="setStage('signin')">Sign in</UiButton>
+          </div>
+
+          <p class="mt-8 text-[12px] leading-relaxed text-[#8f9792]">
+            Afronet is downloaded directly from afronet.africa — for Android, iOS, Windows, macOS and Linux. No app
+            store required.
+          </p>
+
+          <NuxtLink
+            to="/"
+            class="mt-6 inline-flex items-center gap-2 text-[13px] font-semibold text-[#606863] transition-colors duration-150 hover:text-[#121614]"
+          >
+            <i class="fa-solid fa-arrow-left text-[11px]" aria-hidden="true"></i>
+            Back to afronet.africa
+          </NuxtLink>
         </div>
-        <p class="mt-8 text-[12px] leading-relaxed text-[#8f9792]">
-          Afronet is downloaded directly from afronet.africa — for Android, iOS, Windows, macOS and Linux. No app
-          store required.
-        </p>
       </div>
     </div>
 
@@ -439,6 +453,8 @@ import { useMiscellaneous } from '~/stores/miscellaneous'
 // import { device, models, modules } from '~/data/models'
 // import { contacts } from '~/data/people'
 
+import { welcomeIntro } from '~/data/welcome'
+
 definePageMeta({ layout: 'blank' })
 useHead({ title: 'Welcome to Afronet' })
 
@@ -446,8 +462,12 @@ const route = useRoute()
 const userStore = useAfronetUserStore()
 const misc = useMiscellaneous()
 
+// The landing page deep-links in: ?mode=create opens registration and ?mode=signin opens
+// sign-in, while a bare /welcome shows the greeting.
+const stageForMode = { create: 'register', signin: 'signin' }
+
 // welcome | signin | register
-const stage = ref('welcome')
+const stage = ref(stageForMode[route.query.mode] ?? 'welcome')
 const formError = ref('')
 // const notice = ref('') // not used in new flow (no email verification step)
 
@@ -538,15 +558,16 @@ const signIn = async () => {
     formError.value = res.error || 'Could not sign in'
     return
   }
-  // await navigateTo(res.data?.isDciVerified ? '/' : '/verify-id')
-  await navigateTo('/')
+  // await navigateTo(res.data?.isDciVerified ? '/chat' : '/verify-id')
+  // external: a full page load, so /chat arrives cross-origin isolated and the AI can start.
+  await navigateTo('/chat', { external: true })
 }
 
 const showSuccessModal = ref(false)
 const countdown = ref(3)
 const barWidth = ref(100)
 
-const goHome = () => navigateTo('/')
+const goHome = () => navigateTo('/chat', { external: true })
 
 const createAccount = async () => {
   formError.value = ''
@@ -579,7 +600,7 @@ const createAccount = async () => {
   setTimeout(() => {
     clearInterval(tick)
     // await navigateTo('/verify-id')
-    navigateTo('/')
+    navigateTo('/chat', { external: true })
   }, 3000)
 }
 
@@ -623,7 +644,7 @@ const back = () => {
 }
 
 const next = () => {
-  if (step.value === setupSteps.length) navigateTo('/')
+  if (step.value === setupSteps.length) navigateTo('/home')
   else step.value += 1
 }
 */

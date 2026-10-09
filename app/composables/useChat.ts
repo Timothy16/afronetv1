@@ -291,7 +291,6 @@ export function useChat() {
         newChat,
         openConversation,
         importLegacyChat,
-        /** Kept for the stability test, which starts a fresh chat every few questions. */
         clear: newChat,
     }
 }

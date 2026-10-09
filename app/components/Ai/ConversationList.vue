@@ -78,26 +78,61 @@
       </div>
     </div>
 
-    <p class="border-t border-[#e4e4de] px-4 py-3 text-[11px] leading-relaxed text-[#8f9792]">
-      <template v-if="syncing">Saving to your account…</template>
-      <template v-else-if="pending > 0">
-        Saved on this device · {{ pending }} waiting to sync
-      </template>
-      <template v-else>Saved on this device and your account.</template>
-    </p>
+    <div class="border-t border-[#e4e4de] px-3 py-3">
+      <div class="flex items-center gap-2.5">
+        <!-- Initials rather than the stored photo: it lives on another domain, which this
+             cross-origin isolated page cannot load. -->
+        <UiAvatar :name="fullName" :size="32" />
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-[13px] font-medium text-[#121614]">{{ fullName }}</p>
+          <p class="truncate text-[11px] text-[#8f9792]">{{ account }}</p>
+        </div>
+        <button
+          type="button"
+          :aria-label="signingOut ? 'Signing out' : 'Sign out'"
+          :title="signingOut ? 'Signing out…' : 'Sign out'"
+          class="shrink-0 rounded-lg p-2 text-[#606863] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614] disabled:opacity-40"
+          :disabled="signingOut"
+          @click="emit('signout')"
+        >
+          <AiIcon name="signout" :size="16" />
+        </button>
+      </div>
+
+      <p class="mt-2.5 text-[11px] leading-relaxed text-[#8f9792]">
+        <template v-if="syncing">Saving to your account…</template>
+        <template v-else-if="pending > 0">
+          Saved on this device · {{ pending }} waiting to sync
+        </template>
+        <template v-else>Saved on this device and your account.</template>
+      </p>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { useAfronetUserStore } from '~/stores/afronetUser'
+
 defineProps({
   activeId: { type: String, default: null },
   generating: { type: Boolean, default: false },
+  signingOut: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['select', 'new', 'close'])
+const emit = defineEmits(['select', 'new', 'close', 'signout'])
 
 const { list, loading, storageError, rename, remove } = useConversations()
 const { syncing, pending } = useChatSync()
+const userStore = useAfronetUserStore()
+
+const fullName = computed(() => userStore.fullName || 'Afronet user')
+// Email where we have it; a user signed in from the device's own record offline has only the
+// username, so that stands in rather than leaving an empty line.
+const account = computed(() => {
+  const user = userStore.user
+  if (user?.email) return user.email
+  return user?.username ? `@${user.username}` : ''
+})
 
 const menuId = ref(null)
 const confirmId = ref(null)

@@ -11,8 +11,10 @@
       <AiConversationList
         :active-id="activeId"
         :generating="generating"
+        :signing-out="signingOut"
         @select="selectConversation"
         @new="startNewChat"
+        @signout="signOut"
       />
     </aside>
 
@@ -34,9 +36,11 @@
         <AiConversationList
           :active-id="activeId"
           :generating="generating"
+          :signing-out="signingOut"
           @select="selectConversation"
           @new="startNewChat"
           @close="drawer = false"
+          @signout="signOut"
         />
       </aside>
     </Transition>
@@ -52,17 +56,16 @@
           >
             <AiIcon name="menu" :size="18" />
           </button>
-          <!-- Tap 5× to start the hidden stability test. -->
-          <button type="button" aria-label="Afronet" class="shrink-0" @click="registerTap">
-            <BrandMark :size="26" />
-          </button>
-          <span class="truncate text-[15px] font-semibold tracking-[-0.02em] text-[#121614]">AfroIntel</span>
+          <BrandMark :size="26" class="shrink-0" />
+          <span class="truncate text-[15px] font-semibold tracking-[-0.02em] text-[#121614] sm:hidden">AfroIntel</span>
           <AiModelPicker :generating="generating" class="hidden sm:block" />
           <span
             v-if="!online"
-            class="inline-flex items-center gap-1 rounded-full bg-[#f7f7f4] px-2 py-0.5 text-[11px] text-[#606863]"
+            class="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#f7f7f4] px-1.5 py-0.5 text-[11px] text-[#606863] sm:px-2"
+            title="No connection — the AI still answers on this device"
           >
-            <AiIcon name="offline" :size="12" /> Offline
+            <AiIcon name="offline" :size="12" />
+            <span class="hidden sm:inline">Offline</span>
           </span>
         </div>
 
@@ -70,20 +73,26 @@
           <button
             v-if="messages.length"
             type="button"
-            class="rounded-lg px-2.5 py-1.5 text-[13px] text-[#606863] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614] disabled:opacity-40"
+            aria-label="New chat"
+            title="New chat"
+            class="rounded-lg p-2 text-[#606863] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614] disabled:opacity-40 sm:px-2.5 sm:py-1.5 sm:text-[13px]"
             :disabled="generating"
             @click="startNewChat"
           >
-            New chat
+            <AiIcon name="plus" :size="18" class="sm:hidden" />
+            <span class="hidden sm:inline">New chat</span>
           </button>
           <AiAboutPanel />
-          <a
-            href="/"
-            aria-label="Back to Afronet"
-            class="rounded-lg p-2 text-[#606863] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614]"
+          <button
+            type="button"
+            :aria-label="signingOut ? 'Signing out' : 'Sign out'"
+            :title="signingOut ? 'Signing out…' : 'Sign out'"
+            class="rounded-lg p-2 text-[#606863] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614] disabled:opacity-40"
+            :disabled="signingOut"
+            @click="signOut"
           >
-            <AiIcon name="back" :size="18" />
-          </a>
+            <AiIcon name="signout" :size="18" />
+          </button>
         </div>
       </header>
 
@@ -91,7 +100,6 @@
         <div class="mx-auto flex w-full max-w-2xl flex-col gap-5">
           <AiUpdatePrompt :generating="generating" />
           <AiCrashNotice />
-          <AiStressTestBanner />
 
           <!-- Download / starting / error states; hidden once the model is ready. -->
           <AiSetupCard v-if="status !== 'ready'" />
@@ -132,7 +140,7 @@
           />
           <p class="mt-2 text-center text-[11px] text-[#8f9792]">{{ footer }}</p>
           <div class="mt-1 flex justify-center sm:hidden">
-            <AiModelPicker :generating="generating" />
+            <AiModelPicker :generating="generating" placement="up" />
           </div>
         </div>
       </div>
@@ -141,6 +149,8 @@
 </template>
 
 <script setup>
+import { useAfronetUserStore } from '~/stores/afronetUser'
+
 const props = defineProps({
   // From /chat/:id. Empty means a new chat.
   conversationId: { type: String, default: '' },
@@ -152,13 +162,26 @@ const {
   messages, activeId, generating, loadingConversation,
   send, retry, stop, newChat, openConversation, importLegacyChat,
 } = useChat()
-const { refresh } = useConversations()
+const { refresh, clearLocal } = useConversations()
+const userStore = useAfronetUserStore()
 const { start: startSync, sync } = useChatSync()
-const { registerTap, takePending, start } = useStressTest()
 const online = useOnline()
 
 const scrollEl = ref(null)
 const drawer = ref(false)
+const signingOut = ref(false)
+
+// The chat has no app shell around it, so this is the only way out. Local chats go first:
+// devices are shared, and the next person signing in must not see them.
+const signOut = async () => {
+  if (signingOut.value) return
+  signingOut.value = true
+  const userId = userStore.user?._id
+  if (userId) await clearLocal(userId)
+  const ok = await userStore.logout()
+  signingOut.value = false
+  if (ok) await navigateTo('/')
+}
 
 const suggestions = [
   'What are some of Africa\'s major ancient civilizations?',
@@ -224,14 +247,5 @@ onMounted(async () => {
   await refresh(true)
   startSync()
   sync() // catch up with the account in the background; chatting never waits for it
-
-  // ?stresstest=30, or a run requested before a thread-count reload.
-  const requested = Number(new URLSearchParams(location.search).get('stresstest')) || takePending()
-  if (!requested) return
-  const stopWatching = watch(status, (value) => {
-    if (value !== 'ready') return
-    stopWatching()
-    start(requested)
-  }, { immediate: true })
 })
 </script>

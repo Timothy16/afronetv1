@@ -45,6 +45,7 @@ const ICONS = {
   menu: { paths: ['M4 7h16', 'M4 12h16', 'M4 17h10'] },
   chevron: { paths: ['M6 9l6 6 6-6'] },
   info: { paths: ['M12 11v6', 'M12 7.5v.01'], circles: [[12, 12, 9]] },
+  signout: { paths: ['M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4', 'M16 17l5-5-5-5', 'M21 12H9'] },
   download: { paths: ['M12 3v12', 'M7 10l5 5 5-5', 'M4 20h16'] },
   device: { paths: ['M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z', 'M11 18h2'] },
   offline: { paths: ['M3 3l18 18', 'M8.5 16.5a5 5 0 0 1 7 0', 'M5 13a10 10 0 0 1 4-2.5', 'M19 13a10 10 0 0 0-7-3'] },

@@ -5,9 +5,7 @@
     class="sticky top-0 z-30 flex h-14 items-center justify-between gap-4 border-b border-[#e4e4de] bg-[#ffffff]/90 px-4 backdrop-blur"
   >
     <div class="flex items-center gap-6">
-      <NuxtLink to="/" aria-label="Afronet home">
-        <BrandLogo />
-      </NuxtLink>
+      <BrandLogo />
       <nav v-if="route.path !== '/'" class="hidden items-center gap-1 md:flex">
         <NuxtLink
           v-for="l in links"
