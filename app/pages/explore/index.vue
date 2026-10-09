@@ -70,7 +70,7 @@
       <div class="mx-auto w-full max-w-6xl px-5 pb-7 pt-4 sm:px-8">
         <div v-if="isLast" class="flex flex-col gap-2.5 sm:max-w-sm">
           <UiButton to="/welcome?mode=create" block size="lg">
-            Guest start
+            Get Started
             <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
           </UiButton>
           <UiButton to="/welcome?mode=signin" block size="lg" variant="secondary">Sign in</UiButton>

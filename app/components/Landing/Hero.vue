@@ -51,7 +51,7 @@
 
       <div class="mt-6 flex flex-col gap-2.5 sm:mt-8 sm:flex-row">
         <UiButton :to="createHref" size="lg" block class="sm:w-auto sm:min-w-[200px]">
-          Guest start
+          Get Started
           <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
         </UiButton>
         <!-- Written out rather than UiButton with an override: passing a

@@ -40,7 +40,7 @@
           </a>
         </nav>
         <div class="flex items-center gap-2">
-          <!-- Hidden below sm: three controls crowd a 360px screen, and Guest start leads to
+          <!-- Hidden below sm: three controls crowd a 360px screen, and Get Started leads to
                the same page, where signing in is one tap away. -->
           <NuxtLink
             to="/welcome?mode=signin"
@@ -49,7 +49,7 @@
           >
             Sign in
           </NuxtLink>
-          <UiButton to="/welcome?mode=create" size="sm">Guest start</UiButton>
+          <UiButton to="/welcome?mode=create" size="sm">Get Started</UiButton>
         </div>
       </div>
     </header>
@@ -331,7 +331,7 @@
         <p class="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[#606863]">{{ finalCta.body }}</p>
         <div class="mx-auto mt-8 flex max-w-sm flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
           <UiButton to="/welcome?mode=create" size="lg" class="sm:min-w-[200px]">
-            Guest start
+            Get Started
             <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
           </UiButton>
           <UiButton href="#partner" size="lg" variant="secondary" class="sm:min-w-[200px]">
