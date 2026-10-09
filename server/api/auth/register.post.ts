@@ -80,9 +80,14 @@ export default defineEventHandler(async (event) => {
             password: await bcrypt.hash(password, 12),
             lastLogin: new Date(),
         })
-    } catch (error) {
+    } catch (error: any) {
         if (isDuplicateKeyError(error)) {
-            throw createError({ statusCode: 409, message: 'An account with this email already exists' })
+            // Say which field clashed: reporting every collision as an email clash sends people
+            // looking for an account that isn't there.
+            const field = Object.keys(error?.keyPattern ?? {})[0] ?? 'detail'
+            const label = field === 'email' ? 'email' : field === 'username' ? 'username' : 'detail'
+            console.error('[afronet] register duplicate key:', error?.keyValue)
+            throw createError({ statusCode: 409, message: `An account with this ${label} already exists` })
         }
         throw error
     }

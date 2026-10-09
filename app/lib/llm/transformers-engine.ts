@@ -81,6 +81,46 @@ export class TransformersEngine implements LLMEngine {
         }
     }
 
+    /**
+     * Downloads the model files into the cache without starting the model. The worker is
+     * discarded afterwards, so nothing stays resident.
+     */
+    download(onProgress?: (p: LoadProgress) => void) {
+        const variant = this.variant()
+        const worker = new Worker(new URL('./transformers.worker.ts', import.meta.url), { type: 'module' })
+
+        return new Promise<void>((resolve, reject) => {
+            const finish = (err?: Error) => {
+                worker.terminate()
+                err ? reject(err) : resolve()
+            }
+            worker.addEventListener('message', (e: MessageEvent<FromWorker>) => {
+                const msg = e.data
+                if (msg.type === 'progress') onProgress?.(msg.progress)
+                else if (msg.type === 'log') logEvent(msg.message)
+                else if (msg.type === 'ready') finish()
+                else if (msg.type === 'load-error') finish(new Error(msg.message))
+            })
+            worker.addEventListener('error', (e: ErrorEvent) => finish(new Error(e.message || 'The download could not start')))
+
+            worker.postMessage({
+                type: 'download',
+                config: {
+                    id: this.spec.id,
+                    revision: this.spec.revision,
+                    device: this.caps.device,
+                    dtype: variant.dtype,
+                    files: variant.files,
+                    downloadBytes: variant.downloadBytes,
+                    externalData: variant.externalData,
+                    promptBudget: this.limits.promptBudget,
+                    sampling: this.spec.sampling,
+                    threads: this.caps.threads,
+                },
+            } satisfies ToWorker)
+        })
+    }
+
     load(onProgress?: (p: LoadProgress) => void) {
         this.loading ??= this.loadWithFallback(onProgress).catch((err) => {
             this.loading = null

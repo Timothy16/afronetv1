@@ -71,6 +71,16 @@ export async function deleteModelFiles(spec: ModelSpec) {
     }
 }
 
+/** Fetches one model's files into the cache, without starting it (used during sign-up). */
+export async function downloadModelFiles(
+    spec: ModelSpec,
+    caps: DeviceCaps,
+    onProgress?: (p: import('./types').LoadProgress) => void,
+) {
+    if (!variantOn(spec, caps)) throw new Error(`${spec.label} can't run on this device`)
+    await new TransformersEngine(spec, caps).download(onProgress)
+}
+
 /**
  * The one place that decides which model and runtime the app uses.
  * `engine` is null when this device can't run the model at all.

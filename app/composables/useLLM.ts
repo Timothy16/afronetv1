@@ -2,6 +2,7 @@
 import {
     createEngine,
     deleteModelFiles,
+    downloadModelFiles,
     detectDevice,
     isModelCached,
     saveSelectedModel,
@@ -176,6 +177,56 @@ function switchModel(key: string) {
     location.reload()
 }
 
+// --- Sign-up download -------------------------------------------------------------------
+// The chat page has its own setup card; this is the same download run earlier, during sign-up,
+// so the chat opens with the model already on the device.
+const downloading = ref(false)
+const downloadProgress = shallowRef<LoadProgress | null>(null)
+const downloadError = ref<string | null>(null)
+
+async function downloadModel(key?: string) {
+    await init()
+    const detected = caps.value ?? await detectDevice()
+    const spec = MODELS.find(m => m.key === key) ?? model.value
+    if (!spec) return false
+
+    downloadError.value = null
+    downloadProgress.value = null
+
+    if (!variantOn(spec, detected)) {
+        downloadError.value = `${spec.label} can't run on this device`
+        return false
+    }
+
+    // Remember the choice for this device either way, so the chat starts the same model.
+    saveSelectedModel(spec.key)
+
+    if (await isModelCached(spec, detected)) {
+        logEvent(`sign-up: ${spec.label} already on this device`)
+        return true
+    }
+
+    downloading.value = true
+    logEvent(`sign-up: downloading ${spec.label}`)
+    try {
+        await requestPersistentStorage()
+        await downloadModelFiles(spec, detected, (p) => { downloadProgress.value = p })
+        // The chat page reads the cache, so its own setup card will find this and start it.
+        status.value = 'cached'
+        logEvent(`sign-up: ${spec.label} downloaded`)
+        return true
+    }
+    catch (err) {
+        downloadError.value = err instanceof Error ? err.message : String(err)
+        logEvent(`sign-up download failed: ${downloadError.value}`)
+        return false
+    }
+    finally {
+        downloading.value = false
+        await refreshStorage()
+    }
+}
+
 /** Models with what this device would download, and whether it already has them. */
 async function modelOptions(): Promise<Array<{
     spec: ModelSpec
@@ -213,6 +264,10 @@ export function useLLM() {
     return {
         model: readonly(model),
         modelOptions,
+        downloadModel,
+        downloading: readonly(downloading),
+        downloadProgress: readonly(downloadProgress),
+        downloadError: readonly(downloadError),
         switchModel,
         deleteModel,
         status: readonly(status),

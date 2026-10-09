@@ -25,6 +25,8 @@ export interface WorkerLoadConfig {
 
 export type ToWorker =
     | { type: 'load', config: WorkerLoadConfig }
+    /** Fetch the model files into the cache and stop there — used during sign-up. */
+    | { type: 'download', config: WorkerLoadConfig }
     | { type: 'generate', id: number, messages: ChatMessage[], maxNewTokens: number }
     | { type: 'interrupt' }
 

@@ -299,6 +299,19 @@ self.addEventListener('message', (e: MessageEvent<ToWorker>) => {
                 }
             })
             break
+        case 'download':
+            // Sign-up downloads the model before the chat page exists; starting it here would
+            // claim memory we are about to throw away on the next page.
+            enqueue(async () => {
+                try {
+                    await prefetch(msg.config)
+                    post({ type: 'ready' })
+                }
+                catch (err) {
+                    post({ type: 'load-error', message: errorMessage(err) })
+                }
+            })
+            break
         case 'generate':
             enqueue(async () => {
                 try {

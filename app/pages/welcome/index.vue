@@ -279,29 +279,22 @@
       </div>
     </div>
 
-    <!-- Registration success modal -->
-    <UiModal
-      :open="showSuccessModal"
-      title="African ID Created"
-      width="max-w-sm"
-      @close="goHome"
-    >
-      <div class="flex flex-col items-center pb-2 pt-1 text-center">
-        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-[#eaf3ee]">
-          <i class="fa-solid fa-circle-check text-[34px] text-[#0b5d3e]" aria-hidden="true"></i>
-        </span>
-        <p class="mt-4 text-[15px] font-medium text-[#121614]">Welcome to Afronet</p>
-        <p class="mt-1.5 text-[13px] leading-relaxed text-[#606863]">
-          Your African ID has been created. Redirecting you in {{ countdown }}s…
-        </p>
-        <div class="mt-5 h-1 w-full overflow-hidden rounded-full bg-[#e4e4de]">
-          <div
-            class="h-full rounded-full bg-[#0b5d3e]"
-            :style="{ width: barWidth + '%', transition: 'width 2.95s linear' }"
-          />
-        </div>
-      </div>
-    </UiModal>
+    <!-- Guided setup around account creation: intro, then the form, then device fit,
+         model choice, download and the hand-off to the chat. -->
+    <OnboardingIntro v-else-if="stage === 'intro'" @done="setStage('register')" />
+    <OnboardingDeviceFit v-else-if="stage === 'devicefit'" @next="setStage('models')" />
+    <OnboardingModelChoice
+      v-else-if="stage === 'models'"
+      @download="(key) => { chosenModel = key; setStage('download') }"
+      @skip="goToChat"
+    />
+    <OnboardingModelDownload
+      v-else-if="stage === 'download'"
+      :model-id="chosenModel"
+      @done="setStage('ready')"
+      @skip="goToChat"
+    />
+    <OnboardingModelReady v-else-if="stage === 'ready'" :model-id="chosenModel" />
 
     <!--
       Setup (steps 1–7) — not needed yet. After register the user goes straight to "/".
@@ -464,9 +457,9 @@ const misc = useMiscellaneous()
 
 // The landing page deep-links in: ?mode=create opens registration and ?mode=signin opens
 // sign-in, while a bare /welcome shows the greeting.
-const stageForMode = { create: 'register', signin: 'signin' }
+const stageForMode = { create: 'intro', signin: 'signin' }
 
-// welcome | signin | register
+// welcome | signin | intro | register | devicefit | models | download | ready
 const stage = ref(stageForMode[route.query.mode] ?? 'welcome')
 const formError = ref('')
 // const notice = ref('') // not used in new flow (no email verification step)
@@ -563,11 +556,11 @@ const signIn = async () => {
   await navigateTo('/chat', { external: true })
 }
 
-const showSuccessModal = ref(false)
-const countdown = ref(3)
-const barWidth = ref(100)
+/** The model picked on the choose-a-model screen; the download screen falls back without it. */
+const chosenModel = ref('')
 
-const goHome = () => navigateTo('/chat', { external: true })
+/** Leaves the setup for the chat page, which offers the same download. */
+const goToChat = () => navigateTo('/chat', { external: true })
 
 const createAccount = async () => {
   formError.value = ''
@@ -585,23 +578,8 @@ const createAccount = async () => {
     return
   }
 
-  // Show success modal, drain the progress bar, then redirect
-  showSuccessModal.value = true
-  countdown.value = 3
-  barWidth.value = 100
-  await nextTick()
-  setTimeout(() => { barWidth.value = 0 }, 50) // triggers the 2.95s CSS transition
-
-  const tick = setInterval(() => {
-    countdown.value -= 1
-    if (countdown.value <= 0) clearInterval(tick)
-  }, 1000)
-
-  setTimeout(() => {
-    clearInterval(tick)
-    // await navigateTo('/verify-id')
-    navigateTo('/chat', { external: true })
-  }, 3000)
+  // The account exists; carry on into the guided setup, which ends in the chat.
+  setStage('devicefit')
 }
 
 /* --- Setup (steps 1–7) — not needed yet ---

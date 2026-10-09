@@ -6,14 +6,16 @@ const AfronetUserSchema = new mongoose.Schema({
     firstName: { type: String, default: null, trim: true },
     lastName: { type: String, default: null, trim: true },
 
-    // African ID handle — becomes the address for calls, mail and payments
+    // African ID handle — becomes the address for calls, mail and payments.
+    // No default: the sparse unique index only skips documents without the field, so a stored
+    // null would make every account after the first one collide. Registration does not collect
+    // a handle yet, so the field simply stays absent until it does.
     username: {
         type: String,
         unique: true,
         sparse: true,
         trim: true,
         lowercase: true,
-        default: null,
     },
 
     email: {
@@ -22,7 +24,6 @@ const AfronetUserSchema = new mongoose.Schema({
         sparse: true,
         trim: true,
         lowercase: true,
-        default: null,
     },
     phone: { type: String, default: null, trim: true },
 
