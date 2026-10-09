@@ -120,7 +120,7 @@ export default defineNuxtConfig({
       storageBucket: "",
     },
 
-    mongodbUri: process.env.MONGODB_URI,
+    mongodbUri: "",
     baseUrl: "",
     resendApiKey: '',
     transcodingUrl: "",
