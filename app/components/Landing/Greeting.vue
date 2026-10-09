@@ -21,10 +21,10 @@
       <rect width="100%" height="100%" :fill="`url(#${patternId})`" />
     </svg>
 
-    <div class="relative flex items-center gap-2.5">
+    <NuxtLink to="/" aria-label="Afronet home" class="relative inline-flex items-center gap-2.5">
       <BrandMark :size="32" />
       <span class="text-[12px] font-semibold tracking-[0.3em]">AFRONET</span>
-    </div>
+    </NuxtLink>
 
     <div class="relative mt-7 sm:mt-12">
       <div class="min-h-[58px] sm:min-h-[64px]">

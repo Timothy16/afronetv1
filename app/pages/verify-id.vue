@@ -65,7 +65,7 @@ onMounted(async () => {
     try {
       await $fetch('/api/auth/dci-exchange', { method: 'POST', body: { token } })
       await userStore.fetchProfile()
-      return navigateTo('/home')
+      return navigateTo('/chat', { external: true })
     } catch (err) {
       const s = err?.statusCode || err?.response?.status
       formError.value = errorMessages[s === 409 ? 'conflict' : 'failed']

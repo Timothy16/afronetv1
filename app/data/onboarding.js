@@ -4,10 +4,33 @@
 // screens read the real one from lib/llm, so they can only ever offer what the app actually
 // runs, at the real sizes, for the device in front of them.
 //
-// Nothing on these screens claims a capability the app does not have. The first screen used to
-// offer to "restore your Intelligence" from an encrypted backup; there is no backup system, and
-// at that point there is no account either, so it now says what really happens.
+// Screens 3 to 6 are wired to the real engine: real device checks, real models, a real download.
+// Screen 1 is the exception — it is the designed restore screen, UI and simulation only, with no
+// backup system behind it. OnboardingIntro below is the plain-spoken alternative, kept but unused.
 
+// --- screen 1: bring your data --------------------------------------------
+// Shown to everyone. Reads as "if you have used Afronet on this phone before"
+// rather than claiming to know who you are, because at this point in the flow
+// there is no account yet.
+//
+// UI and simulation only: nothing is read from a previous install and nothing is decrypted.
+export const restoreIntro = {
+  title: 'Restore your African Intelligence',
+  body: 'Your African ID holds what makes Afronet yours — your profile, your memories, your projects and the Brains you have added. Models can be swapped or removed without losing any of it, and nothing leaves this device.',
+  restoringTitle: 'Restoring your African Intelligence…',
+  restoringBody: 'Decrypting on this phone. You can keep using it.',
+}
+
+export const restoreItems = [
+  { id: 'profile', title: 'Profile & preferences', detail: 'Languages, voice and how you like answers given', size: '1 MB' },
+  { id: 'memories', title: 'Memories', detail: 'What you have asked Afronet to remember — everywhere, in one Brain, or in one project', size: '6 MB' },
+  { id: 'projects', title: 'Projects', detail: 'Your ongoing work, and what each project knows', size: '5 MB' },
+  { id: 'modules', title: 'Knowledge modules', detail: 'The Brains you use — Medical, Engineering, Teacher and the rest', size: '2.4 GB' },
+  { id: 'knowledge', title: 'Personal knowledge', detail: 'Your own documents and notes, searchable offline', size: '36 MB' },
+]
+
+// Kept for the alternative first screen (OnboardingIntro), which states plainly what running
+// the AI on your own device means. Not in the flow at the moment.
 export const intro = {
   title: 'Afronet lives on this device',
   body: 'Your African Intelligence runs on this phone or computer — not on our servers. Here is what that means before you create your account.',
