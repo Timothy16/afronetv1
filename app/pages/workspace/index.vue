@@ -35,6 +35,14 @@
           {{ c.title }}
         </button>
 
+        <a
+          href="/chat"
+          class="mt-3 flex w-full items-center gap-2.5 rounded-lg border border-[#e4e4de] px-2 py-2 text-left text-[13px] text-[#121614] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4]"
+        >
+          <i class="fa-solid fa-microchip w-4 text-center text-[14px] text-[#0b5d3e]" aria-hidden="true"></i>
+          On-device AfroIntel
+        </a>
+
         <div class="mt-4 space-y-0.5 border-t border-[#e4e4de] pt-3">
           <button
             v-for="l in navLinks"
@@ -162,8 +170,9 @@ const send = (value, attachment) => {
     ...messages.value,
     {
       id: `u${Date.now()}`,
-      author: 'user',
-      body: value,
+      role: 'user',
+      content: value,
+      status: 'done',
       time: now(),
       attachments: attachment ? [{ name: attachment, kind: 'file' }] : undefined,
     },
@@ -178,8 +187,10 @@ const send = (value, attachment) => {
       ...messages.value,
       {
         id: `a${Date.now()}`,
-        author: 'afrointel',
-        body: script?.body ?? defaultReply,
+        role: 'assistant',
+        content: script?.body ?? defaultReply,
+        status: 'done',
+        model: 'AfroIntel (demo)',
         time: now(),
         sources: script?.sources,
         opensApp: script?.opensApp,

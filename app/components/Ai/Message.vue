@@ -1,5 +1,10 @@
 <!-- app/components/Ai/Message.vue -->
 
+<!--
+  One chat turn. Shape matches useChat's UiMessage (and the stored message model):
+  { id, role: 'user' | 'assistant', content, status, model?, stats?, error? }
+  Optional extras used by the workspace demo: sources, attachments, opensApp.
+-->
 <template>
   <article class="msg-in flex gap-3" :class="isUser ? 'justify-end' : ''">
     <span v-if="!isUser" class="mt-0.5 shrink-0">
@@ -9,9 +14,9 @@
     <div class="min-w-0" :class="isUser ? 'max-w-[75%]' : 'max-w-[calc(100%-2.5rem)]'">
       <div
         v-if="isUser"
-        class="rounded-2xl rounded-br-md bg-[#f7f7f4] px-4 py-2.5 text-[14px] leading-relaxed text-[#121614]"
+        class="whitespace-pre-wrap rounded-2xl rounded-br-md bg-[#f7f7f4] px-4 py-2.5 text-[14px] leading-relaxed text-[#121614]"
       >
-        {{ message.body }}
+        {{ message.content }}
         <div v-if="message.attachments?.length" class="mt-2 flex flex-wrap gap-1.5">
           <span
             v-for="a in message.attachments"
@@ -24,7 +29,14 @@
       </div>
 
       <div v-else>
-        <p class="text-[15px] leading-[1.7] text-[#121614]">{{ message.body }}</p>
+        <!-- Replies are Markdown; renderMarkdown escapes everything before formatting. -->
+        <div v-if="message.content" class="reply text-[15px] leading-[1.7] text-[#121614]" v-html="html" />
+        <span v-else-if="message.status === 'streaming'" class="caret inline-block h-4 w-[2px] bg-[#0b5d3e] align-middle" />
+
+        <p v-if="message.status === 'error'" class="mt-2 text-[13px] text-[#b22c26]">
+          {{ message.error || 'Something went wrong.' }}
+        </p>
+        <p v-else-if="message.status === 'stopped'" class="mt-2 text-[12px] text-[#8f9792]">Stopped</p>
 
         <div v-if="message.sources?.length" class="mt-3 flex flex-wrap gap-1.5">
           <span
@@ -32,51 +44,71 @@
             :key="s.label"
             class="inline-flex items-center gap-1.5 rounded-full border border-[#e4e4de] px-2.5 py-1 text-[11px] text-[#606863]"
           >
-            <i class="fa-solid text-[10px] text-[#0b5d3e]" :class="originIcon[s.origin]" aria-hidden="true"></i>
             {{ s.label }}
           </span>
         </div>
 
-        <div class="mt-2.5 flex items-center gap-1 text-[#8f9792]">
+        <div v-if="message.status !== 'streaming'" class="mt-2.5 flex items-center gap-1 text-[#8f9792]">
           <button
-            v-for="a in actions"
-            :key="a.label"
-            :aria-label="a.label"
-            :title="a.label"
+            :aria-label="copied ? 'Copied' : 'Copy'"
+            :title="copied ? 'Copied' : 'Copy'"
             class="rounded-md p-1.5 transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614]"
+            @click="copy"
           >
-            <i class="fa-solid text-[12px]" :class="a.icon" aria-hidden="true"></i>
+            <AiIcon :name="copied ? 'check' : 'copy'" :size="14" />
           </button>
-          <span class="ml-1 text-[11px]">{{ message.time }} · AfroIntel Lite, on device</span>
+          <button
+            v-if="canRetry"
+            aria-label="Try again"
+            title="Try again"
+            class="rounded-md p-1.5 transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614]"
+            @click="emit('retry')"
+          >
+            <AiIcon name="refresh" :size="14" />
+          </button>
+          <span class="ml-1 text-[11px]">{{ footer }}</span>
         </div>
       </div>
     </div>
 
-    <img v-if="isUser" :src="me.avatar" alt="" class="mt-0.5 h-7 w-7 shrink-0 rounded-full object-cover" />
+    <UiAvatar v-if="isUser" :name="userName" :size="28" class="mt-0.5" />
   </article>
 </template>
 
 <script setup>
-import { me } from '~/data/people'
+import { renderMarkdown } from '~/lib/markdown'
+import { useAfronetUserStore } from '~/stores/afronetUser'
 
 const props = defineProps({
-  // { id, author: 'user' | 'afrointel', body, time, sources?, attachments?, opensApp? }
   message: { type: Object, required: true },
 })
 
-const isUser = computed(() => props.message.author === 'user')
+const emit = defineEmits(['retry'])
 
-const originIcon = {
-  local: 'fa-hard-drive',
-  afronet: 'fa-tower-broadcast',
-  internet: 'fa-globe',
+const userStore = useAfronetUserStore()
+
+const isUser = computed(() => props.message.role === 'user')
+const userName = computed(() => userStore.fullName || 'You')
+const html = computed(() => renderMarkdown(props.message.content || ''))
+const canRetry = computed(() => props.message.status === 'error' || props.message.status === 'stopped')
+
+// "AfroIntel · on this device · 24.5 tok/s"
+const footer = computed(() => {
+  const parts = [props.message.model || 'AfroIntel', 'on this device']
+  const tps = props.message.stats?.tokensPerSecond
+  if (tps) parts.push(`${tps.toFixed(1)} tok/s`)
+  return parts.join(' · ')
+})
+
+const copied = ref(false)
+const copy = async () => {
+  try {
+    await navigator.clipboard.writeText(props.message.content)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 1500)
+  }
+  catch { /* clipboard blocked: the text is selectable anyway */ }
 }
-
-const actions = [
-  { icon: 'fa-copy', label: 'Copy' },
-  { icon: 'fa-volume-high', label: 'Read aloud' },
-  { icon: 'fa-arrows-rotate', label: 'Regenerate' },
-]
 </script>
 
 <style scoped>
@@ -95,8 +127,73 @@ const actions = [
   }
 }
 
+.caret {
+  animation: caret 1s steps(2) infinite;
+}
+
+@keyframes caret {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  51%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Markdown coming out of the model. */
+.reply :deep(p) {
+  margin: 0 0 0.75rem;
+}
+
+.reply :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.reply :deep(ul),
+.reply :deep(ol) {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+  list-style: revert;
+}
+
+.reply :deep(li) {
+  margin: 0.15rem 0;
+}
+
+.reply :deep(h3),
+.reply :deep(h4),
+.reply :deep(h5),
+.reply :deep(h6) {
+  margin: 0 0 0.5rem;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.reply :deep(code) {
+  border-radius: 4px;
+  background: #f7f7f4;
+  padding: 0.1rem 0.3rem;
+  font-size: 13px;
+}
+
+.reply :deep(pre) {
+  margin: 0 0 0.75rem;
+  overflow-x: auto;
+  border-radius: 12px;
+  background: #f7f7f4;
+  padding: 0.75rem;
+}
+
+.reply :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .msg-in {
+  .msg-in,
+  .caret {
     animation: none;
   }
 }

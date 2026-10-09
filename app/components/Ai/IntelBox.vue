@@ -8,7 +8,7 @@
       :class="size === 'lg' ? 'h-14' : 'h-12'"
     >
       <UiIconButton label="Add attachment or device" :tone="menu ? 'active' : 'default'" @click="menu = !menu">
-        <i class="fa-solid fa-plus text-[16px]" aria-hidden="true"></i>
+        <AiIcon name="plus" :size="18" />
       </UiIconButton>
 
       <input
@@ -33,16 +33,26 @@
         :tone="recording ? 'danger' : 'default'"
         @click="recording = !recording"
       >
-        <i class="fa-solid fa-microphone text-[16px]" aria-hidden="true"></i>
+        <AiIcon name="mic" :size="18" />
       </UiIconButton>
 
       <button
-        :disabled="!value.trim()"
+        v-if="generating"
+        aria-label="Stop generating"
+        title="Stop"
+        class="flex h-9 w-9 items-center justify-center rounded-full bg-[#121614] text-[#ffffff] transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
+        @click="emit('stop')"
+      >
+        <AiIcon name="stop" :size="16" />
+      </button>
+      <button
+        v-else
+        :disabled="!value.trim() || disabled"
         aria-label="Send to AfroIntel"
         class="flex h-9 w-9 items-center justify-center rounded-full bg-[#0b5d3e] text-[#ffffff] transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] disabled:opacity-25"
         @click="submit"
       >
-        <i class="fa-solid fa-arrow-up text-[16px]" aria-hidden="true"></i>
+        <AiIcon name="send" :size="18" />
       </button>
     </div>
 
@@ -63,7 +73,7 @@
           class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-[13px] text-[#121614] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4]"
           @click="pick(p.id)"
         >
-          <i class="fa-solid w-4 text-center text-[14px] text-[#606863]" :class="p.icon" aria-hidden="true"></i>
+          <span class="w-4 text-[#606863]"><AiIcon :name="p.icon" :size="16" /></span>
           {{ p.label }}
         </button>
       </div>
@@ -91,17 +101,21 @@ const props = defineProps({
   size: { type: String, default: 'lg' },
   placeholder: { type: String, default: 'Ask African Intelligence' },
   autofocus: { type: Boolean, default: false },
+  // While a reply streams, the send button becomes Stop.
+  generating: { type: Boolean, default: false },
+  // Model not ready yet: typing is allowed, sending is not.
+  disabled: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['submit'])
+const emit = defineEmits(['submit', 'stop'])
 
 const plusItems = [
-  { id: 'file', label: 'Upload file', icon: 'fa-paperclip' },
-  { id: 'photo', label: 'Choose photo', icon: 'fa-image' },
-  { id: 'camera', label: 'Take photo', icon: 'fa-camera' },
-  { id: 'voice', label: 'Voice recording', icon: 'fa-microphone' },
-  { id: 'location', label: 'Use my location', icon: 'fa-location-dot' },
-  { id: 'device', label: 'Connect to Afronet device', icon: 'fa-tower-broadcast' },
+  { id: 'file', label: 'Upload file', icon: 'plus' },
+  { id: 'photo', label: 'Choose photo', icon: 'plus' },
+  { id: 'camera', label: 'Take photo', icon: 'plus' },
+  { id: 'voice', label: 'Voice recording', icon: 'mic' },
+  { id: 'location', label: 'Use my location', icon: 'plus' },
+  { id: 'device', label: 'Connect to Afronet device', icon: 'device' },
 ]
 
 // What each menu item "attaches" in this UI-only build.
@@ -121,7 +135,7 @@ const recording = ref(false)
 const inputEl = ref(null)
 
 const submit = () => {
-  if (!value.value.trim()) return
+  if (!value.value.trim() || props.disabled || props.generating) return
   emit('submit', value.value.trim(), attachment.value ?? undefined)
   value.value = ''
   attachment.value = null
