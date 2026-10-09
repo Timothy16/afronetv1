@@ -17,7 +17,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return isWelcome ? undefined : navigateTo('/welcome')
     }
 
-    // Logged in but on the guest page -> send home
+    // Logged in but no verified African ID yet -> only the verification page is allowed
+    // const isVerifyId = to.path === '/verify-id'
+    // if (!userStore.user.isDciVerified) {
+    //     return isVerifyId ? undefined : navigateTo('/verify-id')
+    // }
+
+    // Logged in and verified, but on the guest or verification page -> send home
+    // if (isWelcome || isVerifyId) {
     if (isWelcome) {
         return navigateTo('/')
     }

@@ -18,7 +18,7 @@
           One identity. One African network. A new digital world — with or without the internet.
         </p>
         <div class="mt-8 space-y-2.5">
-          <UiButton block size="lg" @click="setStage('email')">Create African ID</UiButton>
+          <UiButton block size="lg" @click="setStage('register')">Create African ID</UiButton>
           <UiButton block size="lg" variant="secondary" @click="setStage('signin')">Sign in</UiButton>
         </div>
         <p class="mt-8 text-[12px] leading-relaxed text-[#8f9792]">
@@ -58,7 +58,7 @@
       </div>
     </div>
 
-    <!-- Sign up · email -->
+    <!-- Sign up · email — not used in new flow (no email verification step)
     <div v-else-if="stage === 'email'" class="flex min-h-[100dvh] w-full items-center justify-center bg-[#ffffff] px-5 py-20">
       <div class="w-full max-w-sm">
         <BrandLogo class="mb-8" />
@@ -87,7 +87,7 @@
       </div>
     </div>
 
-    <!-- Sign up · check inbox -->
+    Sign up · check inbox — not used in new flow (no email verification step)
     <div v-else-if="stage === 'sent'" class="flex min-h-[100dvh] w-full items-center justify-center bg-[#ffffff] px-5 py-20">
       <div class="w-full max-w-sm text-center">
         <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#eaf3ee]">
@@ -113,6 +113,7 @@
         </button>
       </div>
     </div>
+    -->
 
     <!-- Register -->
     <div v-else-if="stage === 'register'" class="flex min-h-[100dvh] w-full items-center justify-center bg-[#ffffff] px-5 py-16">
@@ -124,6 +125,7 @@
         <p class="mt-1.5 text-[13px] text-[#606863]">Once it exists, every Afronet service recognises you.</p>
         <form class="mt-6 space-y-4" novalidate @submit.prevent="createAccount">
           <!-- Profile photo: uploads to GCS as soon as it's picked; the form sends only the path -->
+          <!-- HIDDEN: profile photo upload not needed in new registration flow
           <div class="flex items-center gap-4">
             <button
               type="button"
@@ -172,6 +174,7 @@
               @change="pickAvatar"
             />
           </div>
+          -->
 
           <div class="grid gap-4 sm:grid-cols-2">
             <UiField label="First name">
@@ -181,8 +184,8 @@
               <UiInput v-model="register.lastName" autocomplete="family-name" placeholder="Adeyemi" />
             </UiField>
           </div>
+          <!-- HIDDEN: username field not used in new registration flow
           <UiField label="Username" hint="Letters, numbers, dots and underscores. This becomes your address for calls, mail and payments.">
-            <!-- The @ is a fixed prefix, not part of the value: the value is always the bare handle -->
             <div class="relative">
               <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#8f9792]">@</span>
               <UiInput
@@ -195,6 +198,9 @@
               />
             </div>
           </UiField>
+          -->
+
+          <!-- HIDDEN: verified email display replaced with plain email input
           <UiField label="Email" hint="Verified. This is where Afronet will reach you.">
             <div class="flex h-11 items-center gap-2 rounded-xl border border-[#e4e4de] bg-[#f7f7f4] px-3.5 text-sm text-[#121614]">
               <i class="fa-solid fa-circle-check text-[13px] text-[#0b5d3e]" aria-hidden="true"></i>
@@ -204,8 +210,31 @@
               </button>
             </div>
           </UiField>
+          -->
+          <UiField label="Email">
+            <UiInput v-model="register.email" type="email" autocomplete="email" placeholder="you@example.com" />
+          </UiField>
+
+          <UiField label="Password" hint="At least 8 characters.">
+            <UiPasswordInput v-model="register.password" autocomplete="new-password" placeholder="Create a password" />
+          </UiField>
+
+          <UiField label="Institution / University">
+            <UiInput v-model="register.institution" autocomplete="organization" placeholder="University of Lagos" />
+          </UiField>
+
           <div class="grid gap-4 sm:grid-cols-2">
             <UiField label="Country">
+              <UiInput v-model="register.country" autocomplete="country-name" placeholder="Nigeria" />
+            </UiField>
+            <UiField label="City">
+              <UiInput v-model="register.city" autocomplete="address-level2" placeholder="Lagos" />
+            </UiField>
+          </div>
+
+          <!-- HIDDEN: country dropdown replaced with free text in new flow; phone removed
+          <div class="grid gap-4 sm:grid-cols-2">
+            <UiField label="Country (optional)">
               <UiSelect
                 v-model="register.countryId"
                 :options="misc.countries"
@@ -217,12 +246,11 @@
               <UiInput v-model="register.phone" type="tel" autocomplete="tel" placeholder="+234 803 123 4567" />
             </UiField>
           </div>
-          <UiField label="Password" hint="At least 8 characters.">
-            <UiPasswordInput v-model="register.password" autocomplete="new-password" placeholder="Create a password" />
-          </UiField>
+          -->
+
           <p v-if="formError" class="text-[13px] text-[#b22c26]" role="alert">{{ formError }}</p>
-          <UiButton block type="submit" :disabled="userStore.loading || uploading">
-            {{ userStore.loading ? 'Creating…' : uploading ? 'Uploading photo…' : 'Create African ID' }}
+          <UiButton block type="submit" :disabled="userStore.loading">
+            {{ userStore.loading ? 'Creating…' : 'Create African ID' }}
           </UiButton>
           <p class="text-center text-[11px] leading-relaxed text-[#8f9792]">
             Your keys are generated on this device. Afronet cannot read your messages, files or AI conversations.
@@ -236,6 +264,30 @@
         </p>
       </div>
     </div>
+
+    <!-- Registration success modal -->
+    <UiModal
+      :open="showSuccessModal"
+      title="African ID Created"
+      width="max-w-sm"
+      @close="goHome"
+    >
+      <div class="flex flex-col items-center pb-2 pt-1 text-center">
+        <span class="flex h-16 w-16 items-center justify-center rounded-full bg-[#eaf3ee]">
+          <i class="fa-solid fa-circle-check text-[34px] text-[#0b5d3e]" aria-hidden="true"></i>
+        </span>
+        <p class="mt-4 text-[15px] font-medium text-[#121614]">Welcome to Afronet</p>
+        <p class="mt-1.5 text-[13px] leading-relaxed text-[#606863]">
+          Your African ID has been created. Redirecting you in {{ countdown }}s…
+        </p>
+        <div class="mt-5 h-1 w-full overflow-hidden rounded-full bg-[#e4e4de]">
+          <div
+            class="h-full rounded-full bg-[#0b5d3e]"
+            :style="{ width: barWidth + '%', transition: 'width 2.95s linear' }"
+          />
+        </div>
+      </div>
+    </UiModal>
 
     <!--
       Setup (steps 1–7) — not needed yet. After register the user goes straight to "/".
@@ -394,158 +446,90 @@ const route = useRoute()
 const userStore = useAfronetUserStore()
 const misc = useMiscellaneous()
 
-// welcome | signin | email | sent | register
+// welcome | signin | register
 const stage = ref('welcome')
 const formError = ref('')
-const notice = ref('')
+// const notice = ref('') // not used in new flow (no email verification step)
 
 const signin = reactive({ identifier: '', password: '' })
 
-// Sign-up: the email typed in step one, and the one the server confirmed via the link
-const signupEmail = ref('')
-const verifiedEmail = ref('')
+// Not used in new flow (no email verification step)
+// const signupEmail = ref('')
+// const verifiedEmail = ref('')
 
 const register = reactive({
   firstName: '',
   lastName: '',
-  username: '',
-  phone: '',
-  countryId: null, // the country id is the value; the full object is looked up on submit
+  email: '',
   password: '',
-  profileImage: '', // GCS path from useDirectGcsUpload; optional
+  institution: '',
+  country: '',
+  city: '',
+  // --- Old fields (not collected in new registration flow) ---
+  // username: '',
+  // phone: '',
+  // countryId: null,
+  // profileImage: '',
 })
 
-// Profile photo. Previewed from a local object URL; the upload returns the GCS path we submit.
-const AVATAR_FOLDER = 'afronet/avatars' // must match PROFILE_IMAGE_FOLDER on the server
-const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const AVATAR_MAX_BYTES = 5 * 1024 * 1024
-
-const { upload, uploading, progress } = useDirectGcsUpload()
-const avatarInput = ref(null)
-const avatarPreview = ref('')
-const avatarError = ref('')
-
-const setAvatarPreview = (url) => {
-  if (avatarPreview.value) URL.revokeObjectURL(avatarPreview.value)
-  avatarPreview.value = url
-}
-
-const pickAvatar = async (event) => {
-  const file = event.target.files?.[0]
-  event.target.value = '' // allow re-picking the same file
-  if (!file) return
-
-  avatarError.value = ''
-  if (!AVATAR_TYPES.includes(file.type)) {
-    avatarError.value = 'Use a JPG, PNG, WEBP or GIF image'
-    return
-  }
-  if (file.size > AVATAR_MAX_BYTES) {
-    avatarError.value = 'Image must be 5MB or smaller'
-    return
-  }
-
-  setAvatarPreview(URL.createObjectURL(file))
-  register.profileImage = ''
-  try {
-    register.profileImage = await upload(file, AVATAR_FOLDER)
-  } catch (error) {
-    avatarError.value = error?.data?.message || 'Upload failed. Please try again.'
-    setAvatarPreview('')
-  }
-}
-
-const removeAvatar = () => {
-  setAvatarPreview('')
-  register.profileImage = ''
-  avatarError.value = ''
-}
-
-onBeforeUnmount(() => setAvatarPreview(''))
+// Profile photo — not used in new registration flow
+// const AVATAR_FOLDER = 'afronet/avatars'
+// const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+// const AVATAR_MAX_BYTES = 5 * 1024 * 1024
+// const { upload, uploading, progress } = useDirectGcsUpload()
+// const avatarInput = ref(null)
+// const avatarPreview = ref('')
+// const avatarError = ref('')
+// const setAvatarPreview = (url) => {
+//   if (avatarPreview.value) URL.revokeObjectURL(avatarPreview.value)
+//   avatarPreview.value = url
+// }
+// const pickAvatar = async (event) => { ... }
+// const removeAvatar = () => { ... }
+// onBeforeUnmount(() => setAvatarPreview(''))
 
 const setStage = (next) => {
   formError.value = ''
-  notice.value = ''
+  // notice.value = '' // notice not used in new flow
   stage.value = next
-  if (next === 'register') misc.getCountries()
+  // if (next === 'register') misc.getCountries()
 }
 
-// ?stage=register comes from the verify link: only open the form if this browser holds a verified email
-if (route.query.stage === 'register') {
-  const { data } = await useAsyncData('welcome-verified-email', () => userStore.fetchVerifiedEmail())
-  if (data.value) {
-    verifiedEmail.value = data.value
-    stage.value = 'register'
-  } else {
-    stage.value = 'email'
-    formError.value = 'Please verify your email first.'
-  }
-} else if (route.query.stage === 'email') {
-  stage.value = 'email'
-}
+// ?stage=register / email — not used in new flow (no email verification step)
+// if (route.query.stage === 'register') {
+//   const { data } = await useAsyncData('welcome-verified-email', () => userStore.fetchVerifiedEmail())
+//   if (data.value) {
+//     verifiedEmail.value = data.value
+//     stage.value = 'register'
+//   } else {
+//     stage.value = 'email'
+//     formError.value = 'Please verify your email first.'
+//   }
+// } else if (route.query.stage === 'email') {
+//   stage.value = 'email'
+// }
 
-onMounted(() => {
-  if (stage.value === 'register') misc.getCountries()
-})
+// onMounted(() => {
+//   if (stage.value === 'register') misc.getCountries()
+// })
 
-// Username: keep the bare handle. Strips any typed/pasted "@" so "@dayv" and "dayv" both become "dayv"
-// (shown as @dayv via the fixed prefix), lowercases, and drops characters the API would reject.
-watch(
-  () => register.username,
-  (value) => {
-    const clean = value.replace(/@/g, '').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 30)
-    if (clean !== value) register.username = clean
-  },
-)
+// Username watcher — not used in new flow (no username field)
+// watch(
+//   () => register.username,
+//   (value) => {
+//     const clean = value.replace(/@/g, '').toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 30)
+//     if (clean !== value) register.username = clean
+//   },
+// )
 
-// Resend cooldown, mirrors the API's one-email-per-minute limit
-const cooldown = ref(0)
-let cooldownTimer = null
-const startCooldown = (seconds = 60) => {
-  clearInterval(cooldownTimer)
-  cooldown.value = seconds
-  cooldownTimer = setInterval(() => {
-    cooldown.value -= 1
-    if (cooldown.value <= 0) clearInterval(cooldownTimer)
-  }, 1000)
-}
-onBeforeUnmount(() => clearInterval(cooldownTimer))
-
-const sendLink = async () => {
-  formError.value = ''
-  const res = await userStore.sendVerification(signupEmail.value)
-  if (!res.success) {
-    formError.value = res.error || 'Could not send the verification email'
-    return
-  }
-  setStage('sent')
-  startCooldown()
-}
-
-const resendLink = async () => {
-  formError.value = ''
-  notice.value = ''
-  const res = await userStore.sendVerification(signupEmail.value)
-  if (!res.success) {
-    formError.value = res.error || 'Could not send the verification email'
-    return
-  }
-  notice.value = 'A new link is on its way.'
-  startCooldown()
-}
-
-// For when the link was opened in another tab of this browser
-const continueAfterVerify = async () => {
-  formError.value = ''
-  const email = await userStore.fetchVerifiedEmail()
-  // The session may still hold an email verified earlier; only accept the one just sent
-  if (!email || email !== signupEmail.value.trim().toLowerCase()) {
-    formError.value = "We haven't seen your verification yet. Click the link in the email, then try again."
-    return
-  }
-  verifiedEmail.value = email
-  setStage('register')
-}
+// Email verification functions — not used in new flow (no email verification step)
+// const cooldown = ref(0)
+// let cooldownTimer = null
+// const startCooldown = (seconds = 60) => { ... }
+// onBeforeUnmount(() => clearInterval(cooldownTimer))
+// const sendLink = async () => { ... }
+// const resendLink = async () => { ... }
+// const continueAfterVerify = async () => { ... }
 
 const signIn = async () => {
   formError.value = ''
@@ -554,20 +538,49 @@ const signIn = async () => {
     formError.value = res.error || 'Could not sign in'
     return
   }
+  // await navigateTo(res.data?.isDciVerified ? '/' : '/verify-id')
   await navigateTo('/')
 }
 
+const showSuccessModal = ref(false)
+const countdown = ref(3)
+const barWidth = ref(100)
+
+const goHome = () => navigateTo('/')
+
 const createAccount = async () => {
   formError.value = ''
-  const { countryId, ...fields } = register
-  const country = misc.countries.find((c) => c.id === countryId) || null
-
-  const res = await userStore.register({ ...fields, country })
+  const res = await userStore.register({
+    firstName: register.firstName,
+    lastName: register.lastName,
+    email: register.email,
+    password: register.password,
+    institution: register.institution,
+    country: register.country,
+    city: register.city,
+  })
   if (!res.success) {
     formError.value = res.error || 'Could not create your African ID'
     return
   }
-  await navigateTo('/')
+
+  // Show success modal, drain the progress bar, then redirect
+  showSuccessModal.value = true
+  countdown.value = 3
+  barWidth.value = 100
+  await nextTick()
+  setTimeout(() => { barWidth.value = 0 }, 50) // triggers the 2.95s CSS transition
+
+  const tick = setInterval(() => {
+    countdown.value -= 1
+    if (countdown.value <= 0) clearInterval(tick)
+  }, 1000)
+
+  setTimeout(() => {
+    clearInterval(tick)
+    // await navigateTo('/verify-id')
+    navigateTo('/')
+  }, 3000)
 }
 
 /* --- Setup (steps 1–7) — not needed yet ---
