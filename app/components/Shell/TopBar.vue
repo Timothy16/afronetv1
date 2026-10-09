@@ -71,6 +71,9 @@ const avatarUrl = computed(() => (userStore.user?.profileImage ? getImageUrl(use
 const signingOut = ref(false)
 const signOut = async () => {
   signingOut.value = true
+  // Devices are shared: this account's chats must not stay on it after signing out.
+  const userId = userStore.user?._id
+  if (userId) await useConversations().clearLocal(userId)
   const ok = await userStore.logout()
   signingOut.value = false
   if (ok) await navigateTo('/welcome')

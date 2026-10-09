@@ -1,11 +1,14 @@
 // stores/afronetUser.js
 import { defineStore } from 'pinia'
+import { clearOfflineUser, readOfflineUser, saveOfflineUser } from '~/lib/offlineUser'
 
 export const useAfronetUserStore = defineStore('afronetUser', {
     state: () => ({
         user: null,
         loading: false,
         error: null,
+        /** Signed in from the device's own record because the server couldn't be reached. */
+        offline: false,
     }),
 
     getters: {
@@ -27,10 +30,29 @@ export const useAfronetUserStore = defineStore('afronetUser', {
                 const res = await requestFetch('/api/auth/me')
                 if (res.success) {
                     this.user = res.data
+                    this.offline = false
+                    // Remember who this is, so the installed app can open without a connection.
+                    if (import.meta.client) saveOfflineUser(res.data)
                     return true
                 }
                 throw new Error('Profile fetch failed')
             } catch (error) {
+                const status = error.statusCode || error.response?.status || error.data?.statusCode
+
+                // No status means the request never reached the server (offline, or the app was
+                // opened from the device's cache). If this device knows who was signed in, carry
+                // on with that and check again once there is a connection. A real 401 is different:
+                // the session has ended, and that clears the profile as before.
+                if (import.meta.client && !status) {
+                    const saved = readOfflineUser()
+                    if (saved) {
+                        this.user = saved
+                        this.offline = true
+                        this.error = null
+                        return true
+                    }
+                }
+
                 this.error = error.data?.message || error.message
                 this.clearProfile()
                 return false
@@ -131,6 +153,7 @@ export const useAfronetUserStore = defineStore('afronetUser', {
         async logout() {
             try {
                 await $fetch('/api/auth/logout', { method: 'POST' })
+                clearOfflineUser()
                 this.clearProfile()
                 return true
             } catch (error) {
@@ -143,6 +166,7 @@ export const useAfronetUserStore = defineStore('afronetUser', {
             this.user = null
             this.error = null
             this.loading = false
+            this.offline = false
         },
     },
 })
