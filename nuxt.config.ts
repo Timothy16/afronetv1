@@ -120,7 +120,7 @@ export default defineNuxtConfig({
       storageBucket: "",
     },
 
-    mongodbUri: "",
+    mongodbUri: process.env.MONGODB_URI,
     baseUrl: "",
     resendApiKey: '',
     transcodingUrl: "",
@@ -179,6 +179,7 @@ export default defineNuxtConfig({
       cleanupOutdatedCaches: true,
     },
     client: { installPrompt: true },
+    registerWebManifestInRouteRules: true,
     // The service worker only runs in production builds.
     devOptions: { enabled: false },
   },

@@ -26,6 +26,11 @@
         <i class="fa-solid fa-microchip text-[12px] text-[#0b5d3e]" aria-hidden="true"></i>
         {{ label }} · on this device
       </p>
+
+      <p v-if="installCount" class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-[#8f9792]">
+        <i class="fa-solid fa-users text-[10px] text-[#0b5d3e]" aria-hidden="true"></i>
+        Installed by {{ installCount }} people across Africa
+      </p>
     </div>
 
     <template #footer>
@@ -50,4 +55,10 @@ const props = defineProps({
 const { model } = useLLM()
 
 const label = computed(() => model.value?.label ?? 'African Intelligence')
+
+const { data: pwaStats } = await useAsyncData('pwa-stats', () => $fetch('/api/pwa/stats'))
+const installCount = computed(() => {
+  const n = pwaStats.value?.installs ?? 0
+  return n > 0 ? n.toLocaleString('en') : null
+})
 </script>

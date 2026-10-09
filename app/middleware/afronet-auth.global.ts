@@ -17,7 +17,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     // and could never read the landing page at all.
     // The catch-all page too, so a visitor gets the real 404 instead of being bounced to sign-in.
     const isNotFound = typeof to.name === 'string' && to.name.startsWith('slug')
-    const isPublic = to.path === '/' || to.path === '/explore' || to.path.startsWith('/explore/') || isNotFound
+    const isPublic = to.path === '/' || to.path === '/explore' || to.path.startsWith('/explore/') || to.path === '/chat-stats' || isNotFound
 
     // Not logged in -> only the public pages and the sign-in area
     if (!userStore.isAuthenticated) {

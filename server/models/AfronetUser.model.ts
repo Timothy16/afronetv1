@@ -41,6 +41,7 @@ const AfronetUserSchema = new mongoose.Schema({
     isDciVerified: { type: Boolean, default: false }, // unverified users are held on /verify-id
 
     isActive: { type: Boolean, default: true }, // soft delete / restore
+    isAdmin: { type: Boolean, default: false },
     lastLogin: { type: Date, default: null },
 
 }, { timestamps: true })
