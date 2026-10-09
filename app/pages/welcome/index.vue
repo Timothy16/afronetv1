@@ -22,7 +22,7 @@
           <p class="mt-3 text-[15px] leading-relaxed text-[#606863]">{{ welcomeIntro.body }}</p>
 
           <div class="mt-8 space-y-2.5">
-            <UiButton block size="lg" @click="setStage('register')">Create African ID</UiButton>
+            <UiButton block size="lg" @click="setStage('intro')">Create African ID</UiButton>
             <UiButton block size="lg" variant="secondary" @click="setStage('signin')">Sign in</UiButton>
           </div>
 
@@ -62,7 +62,7 @@
         </form>
         <p class="mt-6 text-center text-[13px] text-[#606863]">
           New to Afronet?
-          <button type="button" class="font-medium text-[#0b5d3e] hover:underline" @click="setStage('email')">
+          <button type="button" class="font-medium text-[#0b5d3e] hover:underline" @click="setStage('intro')">
             Create African ID
           </button>
         </p>
@@ -276,12 +276,16 @@
             Sign in
           </button>
         </p>
+        <!-- The form is step 2 of the setup, so back means the screen before it, not the browser. -->
+        <button type="button" class="mt-8 text-[12px] text-[#8f9792] hover:text-[#121614]" @click="setStage('intro')">
+          Back
+        </button>
       </div>
     </div>
 
     <!-- Guided setup around account creation: intro, then the form, then device fit,
          model choice, download and the hand-off to the chat. -->
-    <OnboardingIntro v-else-if="stage === 'intro'" @done="setStage('register')" />
+    <OnboardingRestore v-else-if="stage === 'intro'" @done="setStage('register')" />
     <OnboardingDeviceFit v-else-if="stage === 'devicefit'" @next="setStage('models')" />
     <OnboardingModelChoice
       v-else-if="stage === 'models'"
@@ -455,9 +459,10 @@ const route = useRoute()
 const userStore = useAfronetUserStore()
 const misc = useMiscellaneous()
 
-// The landing page deep-links in: ?mode=create opens registration and ?mode=signin opens
-// sign-in, while a bare /welcome shows the greeting.
-const stageForMode = { create: 'intro', signin: 'signin' }
+// Get Started opens the greeting, where "Create African ID" starts the setup; ?mode=signin
+// still goes straight to sign-in. ?mode=create stays mapped to the greeting so an older link
+// or a bookmark lands somewhere sensible rather than mid-flow.
+const stageForMode = { create: 'welcome', signin: 'signin' }
 
 // welcome | signin | intro | register | devicefit | models | download | ready
 const stage = ref(stageForMode[route.query.mode] ?? 'welcome')

@@ -9,7 +9,9 @@
 <template>
   <OnboardingShell>
     <template #header>
-      <BrandMark :size="32" />
+      <NuxtLink to="/" aria-label="Afronet home">
+        <BrandMark :size="32" />
+      </NuxtLink>
     </template>
 
     <div class="flex min-h-[55vh] flex-col items-center justify-center text-center">

@@ -49,7 +49,7 @@
           >
             Sign in
           </NuxtLink>
-          <UiButton to="/welcome?mode=create" size="sm">Get Started</UiButton>
+          <UiButton to="/welcome" size="sm">Get Started</UiButton>
         </div>
       </div>
     </header>
@@ -258,10 +258,12 @@
               {{ point }}
             </li>
           </ul>
+          <!-- Parked with the partner form.
           <UiButton href="#partner" block size="lg" class="mt-7">
             Partner with Afronet
             <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
           </UiButton>
+          -->
         </div>
       </div>
 
@@ -313,11 +315,68 @@
       </ul>
     </LandingSection>
 
-    <!-- Partner form -->
+    <!--
+      Partner enquiry — parked, not deleted. The form validates and confirms but sends nothing,
+      so it is out until there is somewhere for an enquiry to go. Restore this block and the two
+      "Partner with Afronet" buttons below when that exists.
+
     <LandingSection id="partner" eyebrow="Campus partnerships" title="Bring Afronet to your institution.">
       <div class="mt-9 max-w-2xl">
         <LandingPartnerForm />
       </div>
+    </LandingSection>
+    -->
+
+    <!-- How Afronet is built: the engine, the specialisation, and what belongs to you -->
+    <LandingSection id="architecture" :eyebrow="layers.eyebrow" :title="layers.title">
+      <template #lead>{{ layers.body }}</template>
+
+      <div class="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          v-for="item in layers.items"
+          :key="item.id"
+          class="flex flex-col rounded-[24px] border border-[#e4e4de] bg-[#ffffff] p-5 sm:p-6"
+        >
+          <span class="grid h-11 w-11 place-items-center rounded-2xl bg-[#eaf3ee] text-[#0b5d3e]">
+            <i class="fa-solid text-[17px]" :class="item.icon" aria-hidden="true"></i>
+          </span>
+          <h3 class="mt-4 text-[18px] font-semibold tracking-tight text-[#121614]">{{ item.title }}</h3>
+          <p class="mt-1 text-[14px] font-medium text-[#121614]">{{ item.summary }}</p>
+          <p class="mt-2 flex-1 text-[14px] leading-relaxed text-[#606863]">{{ item.detail }}</p>
+          <div class="mt-4">
+            <LandingBadge :status="item.status" />
+          </div>
+        </div>
+      </div>
+
+      <!-- The orchestrator, as one experience rather than a diagram -->
+      <div class="mt-4 rounded-[28px] bg-[#121614] p-6 text-[#ffffff] sm:p-9">
+        <div class="lg:grid lg:grid-cols-[1fr_1.1fr] lg:gap-14">
+          <div class="max-w-xl">
+            <h3 class="font-['Instrument_Serif',Georgia,serif] text-[26px] leading-tight tracking-tight sm:text-[30px]">
+              {{ orchestrator.title }}
+            </h3>
+            <p class="mt-4 text-sm leading-relaxed text-[#ffffff]/70">{{ orchestrator.body }}</p>
+          </div>
+
+          <ol class="mt-7 divide-y divide-[#ffffff]/10 border-t border-[#ffffff]/10 lg:mt-0 lg:border-t-0">
+            <li v-for="(step, i) in orchestrator.steps" :key="step.title" class="flex gap-4 py-4 first:lg:pt-0">
+              <span class="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#ffffff]/10 text-[12px] font-semibold">
+                {{ i + 1 }}
+              </span>
+              <div>
+                <p class="font-semibold">{{ step.title }}</p>
+                <p class="mt-1 text-sm leading-relaxed text-[#ffffff]/65">{{ step.description }}</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <p class="mt-5 flex gap-2 text-[12px] leading-relaxed text-[#606863]">
+        <i class="fa-solid fa-circle-info mt-0.5 shrink-0 text-[11px]" aria-hidden="true"></i>
+        {{ layers.footnote }}
+      </p>
     </LandingSection>
 
     <!-- Final CTA -->
@@ -330,13 +389,15 @@
         </h2>
         <p class="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[#606863]">{{ finalCta.body }}</p>
         <div class="mx-auto mt-8 flex max-w-sm flex-col gap-2.5 sm:max-w-none sm:flex-row sm:justify-center">
-          <UiButton to="/welcome?mode=create" size="lg" class="sm:min-w-[200px]">
+          <UiButton to="/welcome" size="lg" class="sm:min-w-[200px]">
             Get Started
             <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
           </UiButton>
+          <!-- Parked with the partner form.
           <UiButton href="#partner" size="lg" variant="secondary" class="sm:min-w-[200px]">
             Partner with Afronet
           </UiButton>
+          -->
         </div>
       </div>
     </section>
@@ -368,6 +429,8 @@ import {
   institutionCaveat,
   institutionHighlights,
   intelligence,
+  layers,
+  orchestrator,
   languageNote,
   languagePhases,
   offlinePanel,

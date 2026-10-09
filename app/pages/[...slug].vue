@@ -27,7 +27,7 @@
       </p>
 
       <div class="mt-8 space-y-2.5">
-        <UiButton to="/home" block size="lg">Go to Afronet</UiButton>
+        <UiButton href="/chat" block size="lg">Go to Afronet</UiButton>
         <UiButton to="/" block size="lg" variant="secondary">Back to afronet.africa</UiButton>
       </div>
     </div>

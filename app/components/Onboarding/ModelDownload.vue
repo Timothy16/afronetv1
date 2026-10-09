@@ -14,6 +14,7 @@
 -->
 <template>
   <OnboardingShell>
+    <!-- Not a link, unlike the other screens: leaving mid-download cancels it. -->
     <template #header>
       <BrandMark :size="32" />
     </template>

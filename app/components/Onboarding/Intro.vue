@@ -9,7 +9,9 @@
 <template>
   <OnboardingShell>
     <template #header>
-      <BrandMark :size="32" />
+      <NuxtLink to="/" aria-label="Afronet home">
+        <BrandMark :size="32" />
+      </NuxtLink>
     </template>
 
     <h1 class="font-['Instrument_Serif',Georgia,serif] text-[28px] leading-tight text-[#121614] sm:text-[30px]">

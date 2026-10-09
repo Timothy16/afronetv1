@@ -302,6 +302,59 @@ export const finalCta = {
     'Start with Afronet and help bring personalised AI and connected digital experiences to your learning community.',
 }
 
+// --- how Afronet is built (replaces the partner enquiry section) --------------
+// From the Model / Brain / Personal Intelligence architecture: the engine, the specialisation
+// and what belongs to the user are three separate things, and only the first exists today — so
+// the other two carry a Coming Soon label rather than reading as available.
+export const layers = {
+  eyebrow: 'How Afronet is built',
+  title: 'Models, Brains and your own Intelligence.',
+  body: 'Afronet keeps the engine, the specialisation and what belongs to you as three separate things — so changing one never costs you the others.',
+  items: [
+    {
+      id: 'models',
+      icon: 'fa-microchip',
+      title: 'Models',
+      summary: 'The engine that does the thinking.',
+      detail:
+        'Choose one that suits your device, and keep more than one if you want. Removing a Model frees the space without touching anything of yours.',
+      status: 'devices',
+    },
+    {
+      id: 'brains',
+      icon: 'fa-brain',
+      title: 'Brains',
+      summary: 'The specialisation, not another engine.',
+      detail:
+        'African General Intelligence to begin with, then Medical, Nursing, Engineering, Software, Teaching, Journalism, Entrepreneurial and more. A Brain works with any Model it is compatible with, so changing Model never means setting your Brains up again.',
+      status: 'soon',
+    },
+    {
+      id: 'personal',
+      icon: 'fa-user-shield',
+      title: 'Your Personal Intelligence',
+      summary: 'What makes it yours.',
+      detail:
+        'Profile, preferences, memories, projects and your own knowledge. Memory has a scope — everywhere, one Brain, or one project — and you can edit it, delete it or switch it off. Your African ID carries it, so it survives changing Model or device.',
+      status: 'soon',
+    },
+  ],
+  footnote:
+    'Only Models are available today; Brains and Personal Intelligence are in development. Afronet does not provide free conventional internet access.',
+}
+
+// The orchestrator, described as the user experiences it rather than as a system diagram.
+export const orchestrator = {
+  title: 'You ask once. Afronet does the rest.',
+  body: 'Behind a single question, Afronet decides which Brain should answer, checks the Model can do what is being asked, gathers the knowledge and the memory that matter, and answers — as one Intelligence rather than a set of parts.',
+  steps: [
+    { title: 'Chooses the Brain', description: 'The specialisation that fits what you asked.' },
+    { title: 'Checks the Model', description: 'That the engine on your device can do it.' },
+    { title: 'Gathers what it knows', description: 'Relevant knowledge, and only the memory that applies.' },
+    { title: 'Answers', description: 'On your device, with the option to remember what you taught it.' },
+  ],
+}
+
 export const partnerInterests = ['Pilot programme', 'Campus partnership', 'General enquiry']
 
 export const newPartnerEnquiry = () => ({

@@ -80,7 +80,7 @@
 import { hero, images } from '~/data/landing'
 
 defineProps({
-  createHref: { type: String, default: '/welcome?mode=create' },
+  createHref: { type: String, default: '/welcome' },
   signinHref: { type: String, default: '/welcome?mode=signin' },
 })
 </script>

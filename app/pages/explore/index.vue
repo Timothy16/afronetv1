@@ -69,7 +69,7 @@
 
       <div class="mx-auto w-full max-w-6xl px-5 pb-7 pt-4 sm:px-8">
         <div v-if="isLast" class="flex flex-col gap-2.5 sm:max-w-sm">
-          <UiButton to="/welcome?mode=create" block size="lg">
+          <UiButton to="/welcome" block size="lg">
             Get Started
             <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
           </UiButton>

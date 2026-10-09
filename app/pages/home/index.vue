@@ -58,7 +58,6 @@
         <i class="fa-solid fa-arrow-right text-[12px]" aria-hidden="true"></i>
       </button>
       <div class="mt-2 flex items-center gap-4 text-[11px] text-[#8f9792]">
-        <button class="hover:text-[#121614]" @click="go('/welcome')">Onboarding</button>
         <button class="hover:text-[#121614]" @click="go('/system')">Design system</button>
         <button class="hover:text-[#121614]" @click="go('/settings')">Settings</button>
       </div>
