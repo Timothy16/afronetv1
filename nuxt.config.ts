@@ -123,12 +123,6 @@ export default defineNuxtConfig({
     mongodbUri: "",
     baseUrl: "",
     resendApiKey: '',
-    transcodingUrl: "",
-    transcodingApiKey: "",
-    geminiApiKey: "",
-    deepseekApiKey: "",
-    stripeSecretKey: "",
-    stripeWebhookSecret: "",
     sessionSecret: "",
     dciBaseUrl: 'http://localhost:3001', 
     dciApiKey: 'dci_afronet_8ed915646814e14612234d560fcf4850a90fe9658c772b03', 
@@ -136,7 +130,6 @@ export default defineNuxtConfig({
     public: {
       apiBase: '/api',
       appUrl: "",
-      stripePublishableKey: "",
       dciBaseUrl: 'http://localhost:3001'
     }
   },
