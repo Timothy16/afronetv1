@@ -36,67 +36,73 @@
     </div>
 
     <main class="flex min-h-0 flex-1 flex-col">
-      <div
-        class="mx-auto grid w-full max-w-6xl flex-1 gap-6 px-5 pt-6 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-14 lg:pt-10"
-      >
-        <!-- Swipe only matters where there is no keyboard; the buttons below
-             do the same job and are the accessible path. -->
+      <!-- Scrollable content area — stops above the sticky button bar -->
+      <div class="min-h-0 flex-1 overflow-y-auto pb-32">
         <div
-          class="h-[46vh] min-h-[220px] touch-pan-y select-none lg:h-[68vh] lg:min-h-[420px]"
-          @pointerdown="onDown"
-          @pointerup="onUp"
+          class="mx-auto grid w-full max-w-6xl gap-6 px-5 pt-6 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-14 lg:pt-10"
         >
-          <ExploreVisual :key="current.id" :step="current" />
-        </div>
-
-        <article :key="`${current.id}-text`" class="rise pb-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center gap-2 text-sm font-semibold text-[#606863]">
-              <i class="fa-solid text-[13px]" :class="current.icon" aria-hidden="true"></i>
-              {{ current.title }}
-            </span>
-            <ExploreBadge :status="current.status" />
+          <!-- Swipe only matters where there is no keyboard; the buttons below
+               do the same job and are the accessible path. -->
+          <div
+            class="h-[46vh] min-h-[220px] touch-pan-y select-none lg:h-[68vh] lg:min-h-[420px]"
+            @pointerdown="onDown"
+            @pointerup="onUp"
+          >
+            <ExploreVisual :key="current.id" :step="current" />
           </div>
 
-          <h1
-            class="mt-3 font-['Instrument_Serif',Georgia,serif] text-[30px] leading-[1.08] tracking-tight text-[#121614] sm:text-[38px] lg:text-[44px]"
-          >
-            {{ current.headline }}
-          </h1>
-          <p class="mt-3 max-w-xl text-[15px] leading-relaxed text-[#606863] sm:text-base">{{ current.body }}</p>
-        </article>
+          <article :key="`${current.id}-text`" class="rise pb-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center gap-2 text-sm font-semibold text-[#606863]">
+                <i class="fa-solid text-[13px]" :class="current.icon" aria-hidden="true"></i>
+                {{ current.title }}
+              </span>
+              <ExploreBadge :status="current.status" />
+            </div>
+
+            <h1
+              class="mt-3 font-['Instrument_Serif',Georgia,serif] text-[30px] leading-[1.08] tracking-tight text-[#121614] sm:text-[38px] lg:text-[44px]"
+            >
+              {{ current.headline }}
+            </h1>
+            <p class="mt-3 max-w-xl text-[15px] leading-relaxed text-[#606863] sm:text-base">{{ current.body }}</p>
+          </article>
+        </div>
       </div>
 
-      <div class="mx-auto w-full max-w-6xl px-5 pb-7 pt-4 sm:px-8">
-        <div v-if="isLast" class="flex flex-col gap-2.5 sm:max-w-sm">
-          <UiButton to="/welcome" block size="lg">
-            Get Started
-            <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
-          </UiButton>
-          <UiButton to="/welcome?mode=signin" block size="lg" variant="secondary">Sign in</UiButton>
-        </div>
+      <!-- Sticky button bar — always visible at the bottom, text scrolls behind it -->
+      <div class="sticky bottom-0 z-10 border-t border-[#e4e4de] bg-[#f7f7f4]/95 backdrop-blur-sm">
+        <div class="mx-auto w-full max-w-6xl px-5 pb-7 pt-4 sm:px-8">
+          <div v-if="isLast" class="flex flex-col gap-2.5 sm:max-w-sm">
+            <UiButton to="/welcome" block size="lg">
+              Get Started
+              <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
+            </UiButton>
+            <UiButton to="/welcome?mode=signin" block size="lg" variant="secondary">Sign in</UiButton>
+          </div>
 
-        <div v-else class="flex items-center gap-3 sm:max-w-md">
-          <UiButton
-            variant="secondary"
-            size="lg"
-            aria-label="Previous"
-            class="w-12 shrink-0 px-0"
-            :disabled="index === 0"
-            @click="go(-1)"
-          >
-            <i class="fa-solid fa-arrow-left text-[14px]" aria-hidden="true"></i>
-          </UiButton>
-          <UiButton size="lg" class="flex-1" @click="go(1)">
-            Next
-            <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
-          </UiButton>
-        </div>
+          <div v-else class="flex items-center gap-3 sm:max-w-md">
+            <UiButton
+              variant="secondary"
+              size="lg"
+              aria-label="Previous"
+              class="w-12 shrink-0 px-0"
+              :disabled="index === 0"
+              @click="go(-1)"
+            >
+              <i class="fa-solid fa-arrow-left text-[14px]" aria-hidden="true"></i>
+            </UiButton>
+            <UiButton size="lg" class="flex-1" @click="go(1)">
+              Next
+              <i class="fa-solid fa-arrow-right text-[13px]" aria-hidden="true"></i>
+            </UiButton>
+          </div>
 
-        <p class="mt-3 text-[12px] text-[#8f9792]">
-          {{ index + 1 }} of {{ exploreSteps.length }}
-          <span class="lg:hidden"> · Swipe to explore</span>
-        </p>
+          <p class="mt-3 text-[12px] text-[#8f9792]">
+            {{ index + 1 }} of {{ exploreSteps.length }}
+            <span class="lg:hidden"> · Swipe to explore</span>
+          </p>
+        </div>
       </div>
     </main>
   </div>
