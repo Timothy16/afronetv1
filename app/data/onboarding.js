@@ -15,7 +15,7 @@
 //
 // UI and simulation only: nothing is read from a previous install and nothing is decrypted.
 export const restoreIntro = {
-  title: 'Restore your African Intelligence',
+  title: 'Afronet',
   body: 'Your African ID holds what makes Afronet yours — your profile, your memories, your projects and the Brains you have added. Models can be swapped or removed without losing any of it, and nothing leaves this device.',
   restoringTitle: 'Restoring your African Intelligence…',
   restoringBody: 'Decrypting on this phone. You can keep using it.',
