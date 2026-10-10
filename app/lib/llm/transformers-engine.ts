@@ -14,10 +14,16 @@ const LIMITS = {
 }
 
 /**
- * Upper bound for turning cached files into a running model. Phones that run out of memory
- * here can stall instead of failing (seen on a 4 GB Samsung), so give up and say so.
+ * Upper bound for turning cached files into a running model. Phones that run out of memory here
+ * can stall instead of failing (seen on a 4 GB Samsung), so give up and say so.
+ *
+ * Counted in *visible* time only. A phone suspends a backgrounded page, so a plain timer kept
+ * running while the work was paused and reported a failure for a load that was merely waiting
+ * for the user to come back.
  */
 const INIT_TIMEOUT_MS = 3 * 60_000
+/** How often the watchdog checks; also the granularity of the visible-time count. */
+const WATCHDOG_TICK_MS = 1_000
 
 export function variantFor(spec: ModelSpec, caps: DeviceCaps): ModelVariant | undefined {
     return spec.variants[variantKey(caps.device, caps.shaderF16)]
@@ -161,7 +167,33 @@ export class TransformersEngine implements LLMEngine {
         const variant = this.variant(caps)
 
         return new Promise<void>((resolve, reject) => {
-            let initTimer: ReturnType<typeof setTimeout> | undefined
+            // Visible-time watchdog for the init phase (see INIT_TIMEOUT_MS).
+            let watchdog: ReturnType<typeof setInterval> | undefined
+            let visibleMs = 0
+            let hiddenMs = 0
+
+            const startWatchdog = () => {
+                if (watchdog) return
+                watchdog = setInterval(() => {
+                    // document is undefined inside a worker, but this runs on the main thread.
+                    if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+                        hiddenMs += WATCHDOG_TICK_MS
+                        return
+                    }
+                    visibleMs += WATCHDOG_TICK_MS
+                    if (visibleMs < INIT_TIMEOUT_MS) return
+
+                    const waited = Math.round(visibleMs / 1000)
+                    const paused = hiddenMs > 5_000 ? `, plus ${Math.round(hiddenMs / 1000)}s while the app was in the background` : ''
+                    logEvent(`init gave up after ${waited}s on screen${paused}`)
+                    // No "try a smaller model" here: this is already the smallest one offered.
+                    fail(
+                        `Starting ${this.spec.label} took too long. Your device may be low on free memory — `
+                        + 'close other apps and browser tabs, turn off battery saver, and try again.',
+                    )
+                }, WATCHDOG_TICK_MS)
+            }
+
             const fail = (message: string) => {
                 cleanup()
                 worker.terminate()
@@ -171,12 +203,7 @@ export class TransformersEngine implements LLMEngine {
             const onMessage = (e: MessageEvent<FromWorker>) => {
                 const msg = e.data
                 if (msg.type === 'progress') {
-                    if (msg.progress.phase === 'init' && !initTimer) {
-                        initTimer = setTimeout(
-                            () => fail('Starting the AI took too long. Your device may not have enough free memory — close other apps and try again.'),
-                            INIT_TIMEOUT_MS,
-                        )
-                    }
+                    if (msg.progress.phase === 'init') startWatchdog()
                     onProgress?.(msg.progress)
                 }
                 else if (msg.type === 'log') logEvent(msg.message)
@@ -197,7 +224,7 @@ export class TransformersEngine implements LLMEngine {
                 fail('The AI worker sent something this browser could not read.')
             }
             const cleanup = () => {
-                clearTimeout(initTimer)
+                clearInterval(watchdog)
                 worker.removeEventListener('message', onMessage)
                 worker.removeEventListener('error', onError)
                 worker.removeEventListener('messageerror', onMessageError)

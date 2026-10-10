@@ -181,7 +181,11 @@ async function load(config: WorkerLoadConfig) {
     post({ type: 'progress', progress: { phase: 'init', loaded: config.downloadBytes, total: config.downloadBytes, percent: 100 } })
 
     const opts = { revision: config.revision }
+    const startedAt = performance.now()
+    const since = () => `${((performance.now() - startedAt) / 1000).toFixed(1)}s`
+
     tokenizer = await AutoTokenizer.from_pretrained(config.id, opts)
+    post({ type: 'log', message: `init: tokenizer ready (${since()})` })
     model = await AutoModelForCausalLM.from_pretrained(config.id, {
         ...opts,
         dtype: config.dtype as any,
@@ -197,6 +201,8 @@ async function load(config: WorkerLoadConfig) {
             },
         }),
     })
+
+    post({ type: 'log', message: `init: model ready (${since()})` })
 
     // ORT's WASM backend completes each step with microtasks only, so a queued 'interrupt'
     // message would not run until generation ended. Yield one macrotask per step so Stop works.

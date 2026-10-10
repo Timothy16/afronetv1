@@ -4,6 +4,7 @@ import {
     deleteMessagesOf,
     getConversation,
     listConversations,
+    listOutbox,
     nowIso,
     putConversation,
     queueOp,
@@ -73,8 +74,22 @@ async function remove(id: string) {
     logEvent('conversation deleted')
 }
 
-/** Sign-out on a shared device: nothing of this account stays behind. */
+/**
+ * Sign-out on a shared device: nothing of this account stays behind.
+ *
+ * Anything still waiting to reach the account is kept instead of deleted — losing a conversation
+ * is worse than leaving it on the device, and it stays invisible to anyone else, since the list
+ * only ever shows the signed-in account's own chats. It uploads at the next sign-in here.
+ */
 async function clearLocal(userId: string) {
+    const stillQueued = await listOutbox(userId).catch(() => [])
+    if (stillQueued.length) {
+        logEvent(`sign-out: keeping ${stillQueued.length} unsent item(s) on this device`)
+        list.value = []
+        loadedFor = null
+        return
+    }
+
     await clearUserData(userId).catch(err => logEvent(`clearing local chats failed: ${err}`))
     forgetSince(userId)
     list.value = []

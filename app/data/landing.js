@@ -19,15 +19,18 @@ export const availability = {
 // Served by this app rather than a CDN: the landing page then owns its own assets, and the
 // hero is the page's largest image, so it should not wait on someone else's host.
 export const images = {
-  hero: '/images/landingpageHero.jpg',
+  // Two crops of the same scene: the portrait suits a phone, the landscape a desktop. Picking
+  // one by screen width beats cropping a tall photo into a wide window.
+  hero: '/images/hero-afronet.jpg',
+  heroWide: '/images/hero-afronet-wide.jpg',
   campus: '/images/campus.jpg',
 }
 
 export const hero = {
-  titleLead: 'Your Digital World.',
+  titleLead: "Africa's Digital Network.",
   titleAccent: 'Even Without the Internet.',
   body:
-    'Afronet brings personalised AI, student communication and digital services together in one network designed for campuses and communities across Africa.',
+    'Connect. Communicate. Create. Learn. Share. Build — even without traditional internet access.',
   imageAlt: 'Three students on campus steps sharing a phone, laptop and tablet',
   chip: 'Study model ready offline',
 }

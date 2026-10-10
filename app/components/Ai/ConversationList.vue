@@ -3,19 +3,23 @@
 <!-- Past conversations, read from device storage. Select, rename and delete; new chat on top. -->
 <template>
   <div class="flex h-full min-h-0 flex-col bg-[#ffffff]">
-    <div class="flex items-center justify-between gap-2 p-3">
-      <UiButton size="sm" variant="secondary" :disabled="generating" @click="emit('new')">
+    <div class="px-3 pb-2 pt-3">
+      <div class="flex items-center justify-between gap-2">
+        <BrandLogo :size="26" />
+        <button
+          type="button"
+          aria-label="Close conversations"
+          class="rounded-lg p-2 text-[#8f9792] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614] md:hidden"
+          @click="emit('close')"
+        >
+          <AiIcon name="close" :size="16" />
+        </button>
+      </div>
+
+      <UiButton block size="sm" variant="secondary" class="mt-3" :disabled="generating" @click="emit('new')">
         <template #icon><AiIcon name="plus" :size="14" /></template>
         New chat
       </UiButton>
-      <button
-        type="button"
-        aria-label="Close conversations"
-        class="rounded-lg p-2 text-[#8f9792] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614] md:hidden"
-        @click="emit('close')"
-      >
-        <AiIcon name="close" :size="16" />
-      </button>
     </div>
 
     <div class="afro-scroll min-h-0 flex-1 overflow-y-auto px-2 pb-3">

@@ -56,8 +56,7 @@
           >
             <AiIcon name="menu" :size="18" />
           </button>
-          <BrandMark :size="26" class="shrink-0" />
-          <span class="truncate text-[15px] font-semibold tracking-[-0.02em] text-[#121614] sm:hidden">AfroIntel</span>
+          <span class="truncate text-[15px] font-semibold tracking-[-0.02em] text-[#121614] sm:hidden">Afronet</span>
           <AiModelPicker :generating="generating" class="hidden sm:block" />
           <span
             v-if="!online"
@@ -102,7 +101,9 @@
           <AiCrashNotice />
 
           <!-- Download / starting / error states; hidden once the model is ready. -->
-          <AiSetupCard v-if="status !== 'ready'" />
+          <div v-if="status !== 'ready'" ref="setupEl" :class="nudge ? 'nudge' : ''">
+            <AiSetupCard />
+          </div>
 
           <div v-else-if="messages.length === 0 && !loadingConversation" class="pt-10 text-center">
             <h1 class="font-['Instrument_Serif',Georgia,serif] text-[30px] leading-tight text-[#121614]">
@@ -132,11 +133,12 @@
         <div class="mx-auto w-full max-w-2xl">
           <AiIntelBox
             size="sm"
-            placeholder="Ask African Intelligence"
+            :placeholder="status === 'ready' ? 'Ask African Intelligence' : 'Download an AI to start chatting'"
             :generating="generating"
             :disabled="status !== 'ready'"
             @submit="send"
             @stop="stop"
+            @blocked="promptDownload"
           />
           <p class="mt-2 text-center text-[11px] text-[#8f9792]">{{ footer }}</p>
           <div class="mt-1 flex justify-center sm:hidden">
@@ -166,9 +168,14 @@ const { refresh, clearLocal } = useConversations()
 const userStore = useAfronetUserStore()
 const { start: startSync, sync } = useChatSync()
 const online = useOnline()
+const { endSession } = useCrashLog()
 
 const scrollEl = ref(null)
+const setupEl = ref(null)
 const drawer = ref(false)
+/** Briefly draws the eye to the setup card when someone taps the input with no AI installed. */
+const nudge = ref(false)
+let nudgeTimer
 const signingOut = ref(false)
 
 // The chat has no app shell around it, so this is the only way out. Local chats go first:
@@ -177,6 +184,8 @@ const signOut = async () => {
   if (signingOut.value) return
   signingOut.value = true
   const userId = userStore.user?._id
+  // One last attempt to hand anything unsent to the account before the device's copy goes.
+  if (navigator.onLine) await sync().catch(() => {})
   if (userId) await clearLocal(userId)
   const ok = await userStore.logout()
   signingOut.value = false
@@ -195,6 +204,20 @@ const footer = computed(() => {
   const path = info.value?.device === 'webgpu' ? 'graphics chip' : `${threads} core${threads > 1 ? 's' : ''}`
   return `${modelLabel()} · ${path} · answers generated on this device`
 })
+
+// Tapping the message box before an AI exists: show them where to get one.
+const promptDownload = async () => {
+  drawer.value = false
+  await nextTick()
+  setupEl.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  nudge.value = false
+  await nextTick()
+  nudge.value = true
+  clearTimeout(nudgeTimer)
+  nudgeTimer = setTimeout(() => { nudge.value = false }, 1400)
+}
+
+onBeforeUnmount(() => clearTimeout(nudgeTimer))
 
 const startNewChat = () => {
   drawer.value = false
@@ -242,6 +265,10 @@ watch(
   },
 )
 
+// Leaving the chat from inside the app (sign-out, or back to the site) is a clean exit, not the
+// device killing the page — without this, signing out produced a false "restarted" warning.
+onBeforeUnmount(() => endSession())
+
 onMounted(async () => {
   await importLegacyChat()
   await refresh(true)
@@ -249,3 +276,29 @@ onMounted(async () => {
   sync() // catch up with the account in the background; chatting never waits for it
 })
 </script>
+
+<style scoped>
+/* A short pulse on the setup card, so a tap on the disabled message box lands somewhere. */
+.nudge {
+  animation: nudge 1.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes nudge {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nudge {
+    animation: none;
+    outline: 2px solid #0b5d3e;
+    outline-offset: 4px;
+    border-radius: 18px;
+  }
+}
+</style>

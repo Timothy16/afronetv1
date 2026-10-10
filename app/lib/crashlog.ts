@@ -80,6 +80,16 @@ export function startSession(): CrashReport | null {
     return crashed ? { lines: previousLines, lastEvent: previousLines.at(-1) ?? null } : null
 }
 
+/**
+ * Mark this session as closed on purpose. `pagehide` covers closing the tab or a full page load,
+ * but moving away inside the app fires nothing — so signing out used to leave the session
+ * looking "still on screen", and the next launch reported a crash that never happened.
+ */
+export function endSession() {
+    logEvent('left the chat')
+    setVisible(false)
+}
+
 /** The current session's log lines (for "Copy log" after a test run). */
 export function getLog(): string[] {
     return [...lines]
