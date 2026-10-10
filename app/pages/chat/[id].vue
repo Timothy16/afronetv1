@@ -3,6 +3,7 @@
 <!-- One saved conversation, read from this device's storage. -->
 <template>
   <AiChatScreen :conversation-id="String(route.params.id || '')" />
+  <ClientOnly><PwaInstallPrompt /></ClientOnly>
 </template>
 
 <script setup>

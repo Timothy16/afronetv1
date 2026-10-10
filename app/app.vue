@@ -4,7 +4,4 @@
   <NuxtLayout>
     <NuxtPage />
   </NuxtLayout>
-  <ClientOnly>
-    <PwaInstallPrompt />
-  </ClientOnly>
 </template>

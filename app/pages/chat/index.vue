@@ -7,6 +7,7 @@
 -->
 <template>
   <AiChatScreen />
+  <ClientOnly><PwaInstallPrompt /></ClientOnly>
 </template>
 
 <script setup>

@@ -29,10 +29,13 @@
         {{ label }} · on this device
       </p>
 
-      <p v-if="installCount" class="mt-4 inline-flex items-center gap-1.5 text-[12px] text-[#8f9792]">
-        <i class="fa-solid fa-users text-[10px] text-[#0b5d3e]" aria-hidden="true"></i>
-        Installed by {{ installCount }} people across Africa
-      </p>
+      <div v-if="installCount" class="mt-4 flex flex-col items-center gap-1">
+        <p class="inline-flex items-center gap-1.5 text-[12px] text-[#8f9792]">
+          <i class="fa-solid fa-users text-[10px] text-[#0b5d3e]" aria-hidden="true"></i>
+          Installed by {{ installCount }} people across Africa
+        </p>
+        <p class="text-[11px] text-[#c4c9c6]">Count updates every few hours</p>
+      </div>
     </div>
 
     <template #footer>
