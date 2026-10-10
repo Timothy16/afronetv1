@@ -25,12 +25,12 @@
         role="tab"
         :aria-selected="i === index"
         :aria-label="step.title"
-        class="h-1.5 flex-1 rounded-full bg-[#e4e4de]"
+        class="-my-2.5 flex h-1.5 flex-1 items-center py-2.5"
         @click="goTo(i)"
       >
         <span
-          class="block h-full rounded-full transition-colors duration-200"
-          :class="i <= index ? 'bg-[#121614]' : 'bg-transparent'"
+          class="block h-1.5 w-full rounded-full transition-colors duration-200"
+          :class="i <= index ? 'bg-[#121614]' : 'bg-[#e4e4de]'"
         ></span>
       </button>
     </div>
@@ -50,10 +50,10 @@
         </div>
 
         <article :key="`${current.id}-text`" class="rise pb-2">
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="inline-flex items-center gap-2 text-sm font-semibold text-[#606863]">
-              <i class="fa-solid text-[13px]" :class="current.icon" aria-hidden="true"></i>
-              {{ current.title }}
+          <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <span class="inline-flex min-w-0 items-start gap-2 text-sm font-semibold text-[#606863]">
+              <i class="fa-solid mt-0.5 shrink-0 text-[13px]" :class="current.icon" aria-hidden="true"></i>
+              <span class="min-w-0 break-words">{{ current.title }}</span>
             </span>
             <ExploreBadge :status="current.status" />
           </div>

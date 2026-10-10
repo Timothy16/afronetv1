@@ -15,12 +15,20 @@ export const exploreStatuses = {
   future: { label: 'Future Afronet', dot: 'bg-[#8f9792]', chip: 'bg-[#f7f7f4] text-[#606863]' },
 }
 
+// Served from this project rather than an outside host: the walkthrough is part of the product,
+// and an image that fails to load on a slow connection should not be someone else's CDN.
 export const images = {
-  hero: 'https://cdn.magicpatterns.com/patterns/generated-images/b589c786-44c1-4b57-99fd-0255226be909.jpg',
-  family: 'https://cdn.magicpatterns.com/patterns/generated-images/0713a8c3-5b69-4226-9797-a54867a186ab.jpg',
-  rural: 'https://cdn.magicpatterns.com/patterns/generated-images/cd34255b-24cc-43b0-addf-8530353df22f.jpg',
-  university: 'https://cdn.magicpatterns.com/patterns/generated-images/83ce9ae2-7f08-49cd-9654-ccf9052f0e12.jpg',
-  business: 'https://cdn.magicpatterns.com/patterns/generated-images/32ed4d52-08ca-4d96-b2b9-23636dcb55f4.jpg',
+  // Free Calls — a family gathered around a video call
+  family: '/images/free-callscreen.jpg',
+  // Free Messages — an elder and his granddaughter on a phone in a village
+  rural: '/images/voicenotescreen.jpg',
+  // Social — students together on campus
+  university: '/images/socialscreen.jpg',
+  // Afronet Data Bundles — a market trader checking her phone
+  business: '/images/databundlescreen.jpg',
+  // Global Village — deliberately the landing page's own hero shot, so the last step of the
+  // walkthrough closes on the image the visitor arrived with.
+  hero: '/images/hero-afronet-wide.jpg',
 }
 
 // Content for the drawn visuals, kept here so the components stay layout only.
