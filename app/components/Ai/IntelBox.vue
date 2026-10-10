@@ -4,12 +4,15 @@
 <template>
   <div class="relative w-full">
     <div
-      class="flex w-full items-center gap-2 rounded-full border border-[#e4e4de] bg-[#ffffff] pl-2 pr-2 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.12)] transition-[border-color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-within:border-[#0b5d3e]/60"
+      class="flex w-full items-center gap-2 rounded-full border border-[#e4e4de] bg-[#ffffff] pl-5 pr-2 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.12)] transition-[border-color,box-shadow] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-within:border-[#0b5d3e]/60"
       :class="size === 'lg' ? 'h-14' : 'h-12'"
     >
+      <!-- Attachments, photos, camera, location and nearby devices are not built yet; the menu
+           set a placeholder name and nothing more, so it is out until each one does something.
       <UiIconButton label="Add attachment or device" :tone="menu ? 'active' : 'default'" @click="menu = !menu">
         <AiIcon name="plus" :size="18" />
       </UiIconButton>
+      -->
 
       <input
         ref="inputEl"
@@ -18,7 +21,10 @@
         aria-label="Ask African Intelligence"
         class="min-w-0 flex-1 bg-transparent text-[#121614] placeholder:text-[#8f9792] focus:outline-none"
         :class="size === 'lg' ? 'text-[16px]' : 'text-[15px]'"
+        :readonly="disabled"
         @keydown.enter="submit"
+        @mousedown="onBlocked"
+        @focus="onBlocked"
       />
 
       <span
@@ -28,6 +34,7 @@
         {{ attachment }}
       </span>
 
+      <!-- Voice is the next phase; the button only toggled a label.
       <UiIconButton
         :label="recording ? 'Stop recording' : 'Voice input'"
         :tone="recording ? 'danger' : 'default'"
@@ -35,6 +42,7 @@
       >
         <AiIcon name="mic" :size="18" />
       </UiIconButton>
+      -->
 
       <button
         v-if="generating"
@@ -107,7 +115,12 @@ const props = defineProps({
   disabled: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['submit', 'stop'])
+const emit = defineEmits(['submit', 'stop', 'blocked'])
+
+// With no AI on the device there is nothing to send to, so say so instead of ignoring the tap.
+const onBlocked = () => {
+  if (props.disabled) emit('blocked')
+}
 
 const plusItems = [
   { id: 'file', label: 'Upload file', icon: 'plus' },

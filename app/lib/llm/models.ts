@@ -74,7 +74,8 @@ function smollm2(
 }
 
 export const SMOLLM2_360M = smollm2(
-    'smollm2-360m', 'SmolLM2 360M', 'HuggingFaceTB/SmolLM2-360M-Instruct',
+    // The label is what people see; the id, revision and files below are the real model.
+    'smollm2-360m', 'AfroIntel1 360M', 'HuggingFaceTB/SmolLM2-360M-Instruct',
     'a10cc1512eabd3dde888204e902eca88bddb4951', 'phones',
     { int8: 364_564_558, q4: 387_943_246, q4f16: 272_737_275 },
     true, // 30/30 on a real phone
@@ -82,7 +83,7 @@ export const SMOLLM2_360M = smollm2(
 
 /** For laptops with a graphics chip. Passed its 30-question run on a laptop with no crashes. */
 export const SMOLLM2_1_7B = smollm2(
-    'smollm2-1.7b', 'SmolLM2 1.7B', 'HuggingFaceTB/SmolLM2-1.7B-Instruct',
+    'smollm2-1.7b', 'AfroIntel2 1.7B', 'HuggingFaceTB/SmolLM2-1.7B-Instruct',
     '31b70e2e869a7173562077fd711b654946d38674', 'laptops',
     { int8: 1_714_119_778, q4: 1_411_969_607, q4f16: 1_108_730_338 },
     true,

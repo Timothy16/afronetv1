@@ -1,5 +1,5 @@
 // app/composables/useCrashLog.ts
-import { startSession, type CrashReport } from '~/lib/crashlog'
+import { endSession, startSession, type CrashReport } from '~/lib/crashlog'
 
 // Started once per page load, before anything else logs.
 const report = shallowRef<CrashReport | null>(import.meta.client ? startSession() : null)
@@ -9,5 +9,7 @@ export function useCrashLog() {
     return {
         report: readonly(report),
         dismiss: () => { report.value = null },
+        /** Call when leaving the chat on purpose, so it is not mistaken for a crash. */
+        endSession,
     }
 }

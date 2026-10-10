@@ -28,7 +28,7 @@
 
       <div class="mt-8 space-y-2.5">
         <UiButton href="/chat" block size="lg">Go to Afronet</UiButton>
-        <UiButton to="/" block size="lg" variant="secondary">Back to afronet.africa</UiButton>
+        <UiButton to="/" block size="lg" variant="secondary">Back to afronet.net</UiButton>
       </div>
     </div>
   </div>

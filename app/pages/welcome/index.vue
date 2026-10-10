@@ -27,7 +27,7 @@
           </div>
 
           <p class="mt-8 text-[12px] leading-relaxed text-[#8f9792]">
-            Afronet is downloaded directly from afronet.africa — for Android, iOS, Windows, macOS and Linux. No app
+            Afronet is downloaded directly from afronet.net — for Android, iOS, Windows, macOS and Linux. No app
             store required.
           </p>
 
@@ -36,7 +36,7 @@
             class="mt-6 inline-flex items-center gap-2 text-[13px] font-semibold text-[#606863] transition-colors duration-150 hover:text-[#121614]"
           >
             <i class="fa-solid fa-arrow-left text-[11px]" aria-hidden="true"></i>
-            Back to afronet.africa
+            Back to afronet.net
           </NuxtLink>
         </div>
       </div>

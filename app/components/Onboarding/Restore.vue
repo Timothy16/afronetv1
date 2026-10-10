@@ -51,7 +51,9 @@
           </span>
           <span class="block text-[13px] leading-relaxed text-[#606863]">{{ item.detail }}</span>
         </span>
+        <!-- Sizes hidden: they are illustrative, and the list is a statement rather than a choice.
         <span class="shrink-0 text-[13px] tabular-nums text-[#606863]">{{ item.size }}</span>
+        -->
       </li>
     </ul>
 

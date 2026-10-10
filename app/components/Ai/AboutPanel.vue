@@ -60,9 +60,15 @@
           </button>
         </div>
 
+        <!--
+          The runtime credits stay: the app ships transformers.js (Apache 2.0) and ONNX Runtime
+          (MIT) in its own bundle, and both licences ask that the notice travels with the code.
+          The model itself is downloaded by the browser from its publisher rather than served by
+          us, so its name is not listed here.
+        -->
         <p class="mt-3 border-t border-[#e4e4de] pt-2 text-[11px] leading-relaxed text-[#8f9792]">
-          The AI answers on this device. SmolLM2 by Hugging Face (Apache 2.0), transformers.js
-          (Apache 2.0), ONNX Runtime (MIT), Inter and Instrument Serif (Open Font License).
+          Afronet answers on this device, running with transformers.js (Apache 2.0) and ONNX
+          Runtime (MIT). Typefaces: Inter and Instrument Serif (Open Font License).
         </p>
       </div>
     </Transition>

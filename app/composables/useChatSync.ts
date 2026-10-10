@@ -11,6 +11,7 @@
 
 import {
     deleteOp,
+    listConversations,
     getConversation,
     getMessage,
     hardDeleteConversation,
@@ -32,6 +33,10 @@ const lastSyncedAt = ref<string | null>(null)
 
 let listening = false
 let queued: ReturnType<typeof setTimeout> | null = null
+/** Grows while syncing keeps failing, so a server problem is not hammered. */
+let backoffMs = 0
+const FIRST_RETRY_MS = 5_000
+const MAX_RETRY_MS = 5 * 60_000
 
 const SINCE_KEY = (userId: string) => `afronet:lastsync:${userId}`
 
@@ -50,10 +55,17 @@ export function forgetSince(userId: string) {
     catch { /* nothing to clean up */ }
 }
 
-/** 4xx means the server will never accept this item; anything else is worth retrying. */
+/**
+ * Whether the server will never accept this item, however often we ask.
+ *
+ * 401 is deliberately NOT in here. It means the session ended, which is temporary — treating it
+ * as permanent used to delete the queued upload, so a conversation written while a session was
+ * lapsing never reached the account and was then lost when the device's copy was cleared.
+ */
 function isPermanent(err: any) {
     const status = err?.statusCode ?? err?.response?.status ?? 0
-    return status >= 400 && status < 500 && status !== 408 && status !== 429
+    if (status === 401 || status === 408 || status === 429) return false
+    return status >= 400 && status < 500
 }
 
 /** Only the newest entry per item matters — a conversation renamed three times uploads once. */
@@ -127,10 +139,17 @@ async function push(userId: string) {
 }
 
 async function pull(userId: string) {
-    const since = readSince(userId)
+    // With nothing stored locally, ask for everything. Asking "what changed since X?" on an empty
+    // device can only ever return nothing, which is how a signed-out-and-back-in device ended up
+    // with a permanently empty conversation list.
+    const empty = (await listConversations(userId)).length === 0
+    const since = empty ? null : readSince(userId)
+    if (empty) logEvent('sync: device has no conversations, pulling everything')
+
     const response = await $fetch<{ data: Array<StoredConversation & { id: string }> }>('/api/conversations', {
         query: since ? { since } : undefined,
     })
+    const pulled = response.data?.length ?? 0
 
     let newest = since ?? ''
     for (const remote of response.data ?? []) {
@@ -157,6 +176,7 @@ async function pull(userId: string) {
 
     if (newest) writeSince(userId, newest)
     lastSyncedAt.value = new Date().toISOString()
+    return pulled
 }
 
 /**
@@ -194,20 +214,27 @@ export async function fetchMessagesIfMissing(conversationId: string) {
 }
 
 async function sync() {
-    const { currentUserId, refresh } = useConversations()
+    const { currentUserId, refresh, list } = useConversations()
     const userId = currentUserId()
     if (!userId || syncing.value || !navigator.onLine) return
 
     syncing.value = true
+    const queuedBefore = pending.value
     try {
         await push(userId)
-        await pull(userId)
+        const pulled = await pull(userId)
         await refresh(true)
         lastError.value = null
+        backoffMs = 0
+        logEvent(`sync ok: ${queuedBefore} sent, ${pulled} received, ${list.value.length} conversations on this device`)
     }
     catch (err: any) {
         lastError.value = err?.data?.message || err?.message || 'Could not sync'
         logEvent(`sync failed: ${lastError.value}`)
+        // Try again by ourselves rather than waiting for the user to come back to the app.
+        backoffMs = backoffMs ? Math.min(backoffMs * 3, MAX_RETRY_MS) : FIRST_RETRY_MS
+        schedule(backoffMs)
+        logEvent(`sync: retrying in ${Math.round(backoffMs / 1000)}s`)
     }
     finally {
         syncing.value = false
