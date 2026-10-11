@@ -38,7 +38,7 @@
     </div>
 
     <!-- African Intelligence -->
-    <div v-else-if="step.visual === 'ai'" class="flex h-full flex-col items-center justify-center gap-4 bg-[#eaf3ee] px-5 pb-14 pt-12 sm:gap-5 sm:p-8">
+    <div v-else-if="step.visual === 'ai'" class="afro-scroll flex h-full flex-col items-center justify-center gap-4 overflow-y-auto bg-[#eaf3ee] px-5 pb-14 pt-12 sm:gap-5 sm:p-8">
       <span class="grid h-16 w-16 place-items-center rounded-full bg-[#0b5d3e] text-[#ffffff] sm:h-24 sm:w-24">
         <i class="fa-solid fa-microphone text-[22px] sm:text-[28px]" aria-hidden="true"></i>
       </span>
@@ -56,7 +56,7 @@
     </div>
 
     <!-- App store -->
-    <div class="grid h-full grid-cols-3 content-center gap-x-3 gap-y-4 bg-[#f7f7f4] px-5 pb-14 pt-12 sm:gap-x-4 sm:gap-y-6 sm:p-7" v-else-if="step.visual === 'apps'">
+    <div class="afro-scroll grid h-full grid-cols-3 content-center gap-x-3 gap-y-4 overflow-y-auto bg-[#f7f7f4] px-5 pb-14 pt-12 sm:gap-x-4 sm:gap-y-6 sm:p-7" v-else-if="step.visual === 'apps'">
       <div v-for="app in visuals.apps" :key="app" class="flex min-w-0 flex-col items-center gap-2">
         <span class="grid h-10 w-10 place-items-center rounded-2xl bg-[#ffffff] ring-1 ring-[#e4e4de] sm:h-12 sm:w-12">
           <i class="fa-solid fa-cube text-[16px] text-[#0b5d3e]" aria-hidden="true"></i>
@@ -100,7 +100,7 @@
     </div>
 
     <!-- Entertainment -->
-    <div v-else class="grid h-full grid-cols-2 gap-2.5 bg-[#121614] px-5 pb-14 pt-12 sm:gap-3 sm:p-6 sm:pt-14">
+    <div v-else class="afro-scroll grid h-full grid-cols-2 content-center gap-2.5 overflow-y-auto bg-[#121614] px-5 pb-14 pt-12 sm:gap-3 sm:p-6 sm:pt-14">
       <div
         v-for="(tile, i) in visuals.media"
         :key="tile.label"

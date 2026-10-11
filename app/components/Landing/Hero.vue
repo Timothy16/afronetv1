@@ -12,7 +12,7 @@
   to a readable measure rather than stretching across a desktop.
 -->
 <template>
-  <section class="relative isolate flex min-h-[100svh] flex-col overflow-hidden bg-[#121614] text-[#ffffff] md:min-h-[88vh]">
+  <section class="relative isolate flex min-h-[88svh] flex-col justify-center overflow-hidden bg-[#121614] text-[#ffffff] md:min-h-[88vh] md:justify-end">
     <!--
       Two crops of the same photograph. The portrait (768×1376) matches a phone screen, so almost
       all of it shows. On a desktop that shape would be cropped to a thin horizontal band, so from
@@ -33,7 +33,7 @@
     <!-- One even wash: enough contrast for the type, without a dark band across the lower half. -->
     <div class="absolute inset-0 -z-10 bg-[#121614]/55" aria-hidden="true"></div>
 
-    <div class="mx-auto mt-auto w-full max-w-6xl px-5 pb-10 pt-24 sm:px-8 sm:pb-16 sm:pt-28">
+    <div class="mx-auto w-full max-w-6xl px-5 pb-10 pt-24 sm:px-8 sm:pb-16 sm:pt-28">
       <!-- <span
         class="inline-flex items-center gap-2 rounded-full bg-[#ffffff]/10 py-1 pl-1 pr-3 text-[11px] font-semibold text-[#ffffff] ring-1 ring-inset ring-[#ffffff]/20 backdrop-blur sm:py-1.5 sm:pl-1.5 sm:pr-3.5 sm:text-[12px]"
       >

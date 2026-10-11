@@ -25,12 +25,12 @@
         role="tab"
         :aria-selected="i === index"
         :aria-label="step.title"
-        class="h-1.5 flex-1 rounded-full bg-[#e4e4de]"
+        class="-my-2.5 flex h-1.5 flex-1 items-center py-2.5"
         @click="goTo(i)"
       >
         <span
-          class="block h-full rounded-full transition-colors duration-200"
-          :class="i <= index ? 'bg-[#121614]' : 'bg-transparent'"
+          class="block h-1.5 w-full rounded-full transition-colors duration-200"
+          :class="i <= index ? 'bg-[#121614]' : 'bg-[#e4e4de]'"
         ></span>
       </button>
     </div>
