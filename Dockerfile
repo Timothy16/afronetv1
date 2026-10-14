@@ -1,31 +1,14 @@
-FROM node:23.7.0-slim
-
+FROM node:22-slim AS build
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY ./package.json ./package-lock.json ./
-
-
-RUN npm install -- production
-
-COPY .  ./
-
-RUN npm run build 
-
-
-ENV HOST=0.0.0.0
-ENV PORT=3000
-
-
+FROM node:22-slim
+WORKDIR /app
+COPY --from=build /app/.output ./.output
+ENV HOST=0.0.0.0 PORT=3000 NODE_ENV=production
+USER node
 EXPOSE 3000
-
-
-CMD [ "node",".output/server/index.mjs" ]
+CMD ["node", ".output/server/index.mjs"]
