@@ -22,14 +22,14 @@ pipelines:
           services: [docker]
           caches: [docker]
           script:
-            - docker build -t afroecr/afronintel/afronet-live:$BITBUCKET_COMMIT .
-            - pipe: atlassian/aws-ecr-push-image:2.4.0   # check the pipe's page for the latest version
-              variables:
-                AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
-                AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
-                AWS_DEFAULT_REGION: eu-north-1
-                IMAGE_NAME: afroecr/afronintel/afronet-live
-                TAGS: $BITBUCKET_COMMIT latest
+          - docker build -t afroecr/afronintel/afronet-live .
+          - pipe: atlassian/aws-ecr-push-image:2.7.0
+            variables:
+              AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+              AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+              AWS_DEFAULT_REGION: eu-north-1
+              IMAGE_NAME: afroecr/afronintel/afronet-live
+              TAGS: $BITBUCKET_COMMIT latest
 
       - step:
           name: Deploy to Kubernetes
