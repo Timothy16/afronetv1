@@ -22,15 +22,14 @@ pipelines:
           services: [docker]
           caches: [docker]
           script:
-            - docker build -t afroecr/afronintel/afronet-live:$BITBUCKET_BUILD_NUMBER .
-            - docker tag afroecr/afronintel/afronet-live:$BITBUCKET_BUILD_NUMBER afroecr/afronintel/afronet-live:latest
+            - docker build -t afroecr:afronet-live-$BITBUCKET_BUILD_NUMBER .
             - pipe: atlassian/aws-ecr-push-image:2.7.0
               variables:
                 AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
                 AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
                 AWS_DEFAULT_REGION: eu-north-1
-                IMAGE_NAME: afroecr/afronintel/afronet-live
-                TAGS: $BITBUCKET_BUILD_NUMBER latest
+                IMAGE_NAME: afroecr
+                TAGS: afronet-live-$BITBUCKET_BUILD_NUMBER
 
       - step:
           name: Deploy to Kubernetes
@@ -42,7 +41,7 @@ pipelines:
             - export FILE=frontend/live/afronet/app/frontnuxtjs-deployment.yaml
             - cd deploymentv2
             - |
-              sed -i "s|\(image: .*afronet-live\):.*|\1:${BITBUCKET_BUILD_NUMBER}|" $FILE
+              sed -i "s|\(image: .*/afroecr\):.*|\1:afronet-live-${BITBUCKET_BUILD_NUMBER}|" $FILE
             - kubectl apply -n $K8S_NAMESPACE -f $FILE
             - kubectl rollout status deployment/afronet -n $K8S_NAMESPACE --timeout=300s
             - git config user.name "Bitbucket Pipelines"
