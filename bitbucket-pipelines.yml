@@ -40,10 +40,10 @@ pipelines:
             - aws eks update-kubeconfig --name $EKS_CLUSTER_NAME --region eu-north-1
             - export FILE=frontend/live/afronet/app/frontnuxtjs-deployment.yaml
             - cd deploymentv2
-            - sed -i "s|\(image: .*afronet-live\):.*|\1:${BITBUCKET_COMMIT}|" $FILE
+            - |
+              sed -i "s|\(image: .*afronet-live\):.*|\1:${BITBUCKET_COMMIT}|" $FILE
             - kubectl apply -n $K8S_NAMESPACE -f $FILE
             - kubectl rollout status deployment/afronet -n $K8S_NAMESPACE --timeout=300s
-            # record the deployed tag in the deploymentv2 repo
             - git config user.name "Bitbucket Pipelines"
             - git config user.email "pipelines@noreply.bitbucket.org"
             - |
