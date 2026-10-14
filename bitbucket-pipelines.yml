@@ -44,7 +44,7 @@ pipelines:
               sed -i "s|\(image: .*afronet-live\):.*|\1:${BITBUCKET_COMMIT}|" $FILE
             - kubectl apply -n $K8S_NAMESPACE -f $FILE
             - kubectl rollout status deployment/afronet -n $K8S_NAMESPACE --timeout=300s
-            - git config user.name "Bitbucket Pipelines"
+            - git config user.name "Bitbucket Pipeline"
             - git config user.email "pipelines@noreply.bitbucket.org"
             - |
               if git diff --quiet; then
