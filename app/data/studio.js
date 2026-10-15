@@ -15,10 +15,19 @@
 import { formatDate, formatNaira, permissionCatalogue } from '~/data/store'
 
 /**
- * What a screen shows before the real figures arrive from /api/studio/quota. Zero rather than
- * a guess: a number invented here would be wrong for every account that has used any.
+ * What a screen shows before the real figures arrive from /api/studio/quota.
+ *
+ * Zero, and `enough` false, so nothing offers to build an app until the server has said
+ * whether this account can afford one. A number invented here would be wrong for everybody.
  */
-export const aiQuota = { used: 0, limit: 20, resets: '' }
+export const aiQuota = {
+  balance: 0,
+  allowance: 0,
+  renewsOn: '',
+  maxPerGeneration: 0,
+  enough: false,
+  blockedReason: '',
+}
 
 // --- status ---------------------------------------------------------------
 // One label per state, used by every badge and filter, so an app in review cannot be

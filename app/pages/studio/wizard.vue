@@ -58,7 +58,7 @@
         </template>
 
         <template v-else-if="phase === 'idle'">
-          <UiButton size="lg" @click="start">
+          <UiButton size="lg" :disabled="!credits.enough" @click="start">
             <template #icon><i class="fa-solid fa-wand-magic-sparkles text-[12px]" aria-hidden="true"></i></template>
             Generate app
           </UiButton>

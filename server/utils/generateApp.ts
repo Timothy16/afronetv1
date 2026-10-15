@@ -12,16 +12,10 @@
 
 import { AfronetAppGeneration } from '../models/AfronetAppGeneration.model'
 import { SDK_RULES, withSdk } from './appSdk'
+import { MAX_OUTPUT_TOKENS, spendTokens } from './tokenAllowance'
 
 /** The model that writes the apps. Capable enough to one-shot a working app, cheap enough to ship on. */
 export const GENERATION_MODEL = 'claude-sonnet-5-5'
-
-/**
- * A ceiling on output, which is the expensive half of a generation — around 98% of the cost.
- * 16,000 leaves room for a real app with several screens while capping any one call at about
- * sixteen cents.
- */
-export const MAX_OUTPUT_TOKENS = 16000
 
 /** USD per million tokens, for GENERATION_MODEL, as published. Used to price a row when it is written. */
 const PRICE_PER_MTOK = { input: 2, output: 10 }
@@ -114,6 +108,11 @@ ${opts.prompt}`
     const started = Date.now()
 
     const record = async (row: any) => {
+        // The tokens come off the balance here, beside the ledger row, so a generation cannot
+        // be recorded without being charged for — including one that failed, which still cost
+        // us the moment the model started writing.
+        await spendTokens(opts.userId, (row.inputTokens ?? 0) + (row.outputTokens ?? 0))
+
         try {
             await AfronetAppGeneration.create({
                 userId: opts.userId,

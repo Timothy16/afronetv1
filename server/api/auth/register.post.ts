@@ -1,6 +1,7 @@
 // server/api/auth/register.post.ts
 import bcrypt from 'bcryptjs'
 import { AfronetUser } from '../../models/AfronetUser.model'
+import { balanceFor } from '../../utils/tokenAllowance'
 // import { AfronetEmailVerification } from '../../models/AfronetEmailVerification.model'
 
 export default defineEventHandler(async (event) => {
@@ -94,6 +95,14 @@ export default defineEventHandler(async (event) => {
 
     // --- Old: verification record cleanup ---
     // await AfronetEmailVerification.deleteMany({ email })
+
+    // This week's tokens, so a new developer can build something straight away rather than
+    // finding an empty balance the first time they open Studio. Reading it is also what
+    // creates it, so an account that somehow misses this still gets one on first use — but
+    // doing it here means the allowance starts from signing up, not from first opening Studio.
+    await balanceFor(user._id).catch(() => {
+        // Never the reason a registration fails. The balance is created on first read anyway.
+    })
 
     await startAfronetSession(event, { userId: user._id.toString() })
 

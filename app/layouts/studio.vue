@@ -39,7 +39,7 @@
           </span>
         </NuxtLink>
 
-        <span class="ml-auto text-[12.5px] text-[#606863]">{{ creditsLeft }} AI generations left</span>
+        <span class="ml-auto text-[12.5px] text-[#606863]">{{ creditsLeft.toLocaleString() }} tokens left</span>
       </header>
 
       <main class="mx-auto w-full max-w-[1280px] px-4 pb-28 pt-6 lg:px-8 lg:pb-12">

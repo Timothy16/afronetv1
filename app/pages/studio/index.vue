@@ -197,7 +197,10 @@ const stats = computed(() => {
     { label: 'Published apps', value: String(published.value.length) },
     { label: 'Installs (all time)', value: compact(installs) },
     { label: 'Average rating', value: average ? average.toFixed(1) : 'No ratings yet' },
-    { label: 'Generations left', value: `${creditsLeft.value} of ${credits.value.limit}` },
+    {
+      label: 'Tokens left this week',
+      value: `${creditsLeft.value.toLocaleString()} of ${(credits.value.allowance ?? 0).toLocaleString()}`,
+    },
   ]
 })
 

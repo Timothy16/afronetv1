@@ -2,11 +2,11 @@
 //
 // What this account has left. Read by Studio so a developer knows before they start describing
 // an app, rather than after the refusal.
-import { quotaFor } from '../../utils/generationQuota'
+import { balanceFor } from '../../utils/tokenAllowance'
 
 export default defineEventHandler(async (event) => {
     const session = await requireAfronetUser(event)
     await ensureMongo()
 
-    return { success: true, data: await quotaFor(session.userId) }
+    return { success: true, data: await balanceFor(session.userId) }
 })

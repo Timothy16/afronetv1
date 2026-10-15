@@ -126,7 +126,8 @@ export function useStudio() {
   /** Everything that still needs the developer to do something. */
   const pipeline = computed(() => devApps.value.filter((a) => !['published', 'archived'].includes(a.status)))
 
-  const creditsLeft = computed(() => Math.max(0, credits.value.limit - credits.value.used))
+  /** Tokens left this week. The name is historical; it is a token balance now. */
+  const creditsLeft = computed(() => Math.max(0, credits.value.balance ?? 0))
 
   // --- writing ------------------------------------------------------------
   const replaceLocal = (app) => {
@@ -249,7 +250,7 @@ export function useStudio() {
     try {
       const res = await apiFetch('/api/studio/quota')
       const q = res?.data
-      if (q) credits.value = { used: q.monthUsed, limit: q.monthLimit, resets: q.resetsOn, costUsd: q.monthCostUsd }
+      if (q) credits.value = { ...q }
     } catch {
       // Leave the last known figure. A quota that cannot be read is not a quota of zero.
     }

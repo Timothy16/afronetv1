@@ -37,10 +37,38 @@
         </div>
       </dl>
 
-      <p class="mt-4 flex items-start gap-1.5 text-[12.5px] text-[#606863]">
-        <i class="fa-solid fa-gauge-high mt-0.5 text-[11px]" aria-hidden="true"></i>
-        Uses 1 of your {{ creditsLeft }} remaining generations. It takes about half a minute.
-      </p>
+      <!--
+        What it could cost, against what they have.
+
+        The ceiling rather than an average, because nobody knows how long an app will be until
+        it has been written, and a figure that turns out to be too low is worse than one that
+        turns out generous. Most apps come in at around half of it.
+      -->
+      <div
+        class="mt-4 rounded-2xl p-4 text-[12.5px] leading-relaxed"
+        :class="credits.enough ? 'bg-[#f7f7f4] text-[#606863]' : 'bg-[#faf3e3] text-[#b07f15]'"
+      >
+        <p class="flex items-start gap-1.5">
+          <i class="fa-solid fa-gauge-high mt-0.5 shrink-0 text-[11px]" aria-hidden="true"></i>
+          <span>
+            Building this could use up to
+            <strong :class="credits.enough ? 'text-[#121614]' : ''">
+              {{ (credits.maxPerGeneration ?? 0).toLocaleString() }}
+            </strong>
+            of your
+            <strong :class="credits.enough ? 'text-[#121614]' : ''">
+              {{ creditsLeft.toLocaleString() }}
+            </strong>
+            tokens. Most apps use about half that, and you are only charged what it takes.
+          </span>
+        </p>
+
+        <p v-if="!credits.enough" class="mt-2 font-medium">
+          That is more than you have left. Your allowance goes back to
+          {{ (credits.allowance ?? 0).toLocaleString() }} tokens on {{ formatDate(credits.renewsOn) }}.
+        </p>
+        <p v-else class="mt-1 text-[#8f9792]">It takes about half a minute.</p>
+      </div>
     </div>
 
     <!-- Running, or stopped partway ---------------------------------------->
@@ -88,9 +116,14 @@
       <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#faf3e3] text-[#b07f15]">
         <i class="fa-solid fa-gauge-high text-[20px]" aria-hidden="true"></i>
       </span>
-      <h1 class="mt-3 text-[20px] font-semibold text-[#121614]">That’s all your generations for now</h1>
+      <h1 class="mt-3 text-[20px] font-semibold text-[#121614]">That’s this week’s tokens</h1>
       <p class="mx-auto mt-1 max-w-sm text-[13.5px] leading-relaxed text-[#606863]">
-        {{ failure || (credits.resets ? `Your quota resets on ${formatDate(credits.resets)}.` : '') }}
+        {{
+          failure ||
+          (credits.renewsOn
+            ? `Your allowance goes back to ${(credits.allowance ?? 0).toLocaleString()} tokens on ${formatDate(credits.renewsOn)}.`
+            : '')
+        }}
         You can still edit apps you have already built, and publish them.
       </p>
     </div>

@@ -36,8 +36,8 @@
     <div class="space-y-3 border-t border-[#ffffff]/10 pt-4">
       <div class="px-1">
         <div class="flex items-center justify-between text-[11.5px] text-[#ffffff]/50">
-          <span>AI generations this month</span>
-          <span>{{ creditsLeft }} left</span>
+          <span>Tokens this week</span>
+          <span>{{ creditsLeft.toLocaleString() }} left</span>
         </div>
         <div class="mt-1.5 h-1 overflow-hidden rounded-full bg-[#ffffff]/10">
           <div class="h-full rounded-full bg-[#0b5d3e]" :style="{ width: `${usedPct}%` }" />
@@ -77,5 +77,10 @@ const route = useRoute()
 
 const isActive = (n) => (n.exact ? route.path === n.to : route.path.startsWith(n.to))
 
-const usedPct = computed(() => Math.round((credits.value.used / Math.max(1, credits.value.limit)) * 100))
+// How much of the week's allowance has gone, so the bar fills as it is spent.
+const usedPct = computed(() => {
+  const allowance = Math.max(1, credits.value.allowance ?? 0)
+  const spent = allowance - (credits.value.balance ?? 0)
+  return Math.min(100, Math.max(0, Math.round((spent / allowance) * 100)))
+})
 </script>

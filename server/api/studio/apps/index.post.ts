@@ -14,7 +14,7 @@ import { AfronetDevApp } from '../../../models/AfronetDevApp.model'
 import { buildFromWizard } from '../../../utils/devApps'
 import { generateApp } from '../../../utils/generateApp'
 import { filesToDoc, sizeOf } from '../../../utils/packageFormat'
-import { requireQuota } from '../../../utils/generationQuota'
+import { MAX_PROMPT_CHARS, requireTokens } from '../../../utils/tokenAllowance'
 import { validateApp } from '../../../utils/validateApp'
 
 export default defineEventHandler(async (event) => {
@@ -22,13 +22,18 @@ export default defineEventHandler(async (event) => {
     await ensureMongo()
 
     const answers = await readBody(event)
-    const prompt = String(answers?.prompt ?? '').trim()
+
+    // Bounded at both ends. The lower bound is so there is something to build from; the upper
+    // one is what makes MAX_PER_GENERATION a real ceiling rather than an estimate, since an
+    // unbounded description would make the input cost unbounded with it.
+    const prompt = String(answers?.prompt ?? '').trim().slice(0, MAX_PROMPT_CHARS)
     if (prompt.length < 15) {
         throw createError({ statusCode: 400, message: 'Describe the app in a bit more detail' })
     }
 
-    // Before anything is spent. A refusal here costs nothing and says how long until it lifts.
-    await requireQuota(session.userId)
+    // Before anything is spent. The balance has to cover the most a generation can take, so
+    // it can never go negative — and a refusal here costs nothing and says when it lifts.
+    await requireTokens(session.userId)
 
     const doc: any = { ...buildFromWizard(answers), userId: session.userId }
 

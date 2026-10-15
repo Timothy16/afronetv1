@@ -16,7 +16,7 @@
         <i class="fa-solid fa-wand-magic-sparkles text-[12px] text-[#0b5d3e]" aria-hidden="true"></i>
         AI assistant
       </p>
-      <span class="text-[11.5px] text-[#8f9792]">{{ creditsLeft }} left</span>
+      <span class="text-[11.5px] text-[#8f9792]">{{ creditsLeft.toLocaleString() }} tokens left</span>
     </div>
 
     <div class="afro-scroll flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
