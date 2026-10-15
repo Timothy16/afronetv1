@@ -50,9 +50,17 @@
           AfroIntel
         </a>
 
-        <UiButton to="/studio" size="sm" class="ml-1 hidden lg:inline-flex">
+        <!--
+          Reachable on a phone, which is where nearly everyone is.
+
+          This was hidden below 1024px, and Studio is not in the tab bar either — so on a
+          phone there was no way into Studio from the store at all. The wording shortens on a
+          small screen rather than the whole button giving way to nothing.
+        -->
+        <UiButton to="/studio" size="sm" class="ml-1 shrink-0">
           <template #icon><i class="fa-solid fa-wand-magic-sparkles text-[11px]" aria-hidden="true"></i></template>
-          Create an app
+          <span class="hidden sm:inline">Create an app</span>
+          <span class="sm:hidden">Create</span>
         </UiButton>
       </div>
     </div>

@@ -100,6 +100,49 @@
             {{ runtimeCopy.sandboxBody }}
           </div>
 
+          <!-- What the app has asked Afronet for ------------------------------->
+          <div class="mt-5">
+            <div class="flex items-center justify-between gap-3">
+              <h3 class="text-[13px] font-semibold text-[#121614]">What this app has asked for</h3>
+              <button
+                v-if="bridgeLog.length"
+                class="text-[12px] font-medium text-[#606863] hover:text-[#121614]"
+                @click="clearBridgeLog"
+              >
+                Clear
+              </button>
+            </div>
+
+            <ul v-if="bridgeLog.length" class="mt-2 space-y-1">
+              <li
+                v-for="(entry, i) in bridgeLog.slice(0, 12)"
+                :key="`${entry.at}-${i}`"
+                class="flex items-baseline gap-2 rounded-lg bg-[#f7f7f4] px-2.5 py-1.5 text-[11.5px]"
+              >
+                <i
+                  class="fa-solid shrink-0 text-[9px]"
+                  :class="entry.ok ? 'fa-circle-check text-[#0b5d3e]' : 'fa-circle-xmark text-[#b22c26]'"
+                  aria-hidden="true"
+                ></i>
+                <span class="font-[ui-monospace,SFMono-Regular,Menlo,monospace] text-[#121614]">
+                  {{ entry.call }}<template v-if="entry.key">("{{ entry.key }}")</template>
+                </span>
+                <span class="ml-auto shrink-0 text-right text-[#606863]">
+                  <template v-if="!entry.ok">{{ entry.error }}</template>
+                  <template v-else-if="entry.call === 'storage.get'">
+                    {{ entry.found ? 'found' : 'nothing saved' }}
+                  </template>
+                  <template v-else>done</template>
+                </span>
+              </li>
+            </ul>
+
+            <p v-else class="mt-2 rounded-lg bg-[#f7f7f4] px-2.5 py-2 text-[11.5px] leading-relaxed text-[#606863]">
+              Nothing yet. An app that keeps your work asks here when it opens, and again each time
+              you change something — so if this stays empty, it is not saving at all.
+            </p>
+          </div>
+
           <div class="mt-5 space-y-2">
             <UiButton variant="secondary" block @click="emit('restart')">
               <template #icon><i class="fa-solid fa-rotate-left text-[11px]" aria-hidden="true"></i></template>
@@ -128,6 +171,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'restart', 'clear-data', 'permission'])
+
+const { bridgeLog, clearBridgeLog } = useAppBridge()
 
 /** The real size of what was downloaded, once known; the listing's figure until then. */
 const packageMB = computed(() =>

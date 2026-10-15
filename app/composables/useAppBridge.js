@@ -25,8 +25,29 @@ const MAX_KEYS_PER_APP = 20
 const MAX_VALUE_BYTES = 64 * 1024
 const MAX_TOAST = 120
 
+/** The last calls an app made, newest first. Capped, because an app can be chatty. */
+const MAX_LOG = 40
+
 export function useAppBridge() {
   const { appData, setAppData, notify } = useAppLibrary()
+
+  /**
+   * What an app has asked for, and what it got back.
+   *
+   * Visible in the running app's settings, because "did my save actually work?" is not a
+   * question anyone should have to answer by guessing — and it is the question this bug has
+   * come down to. It records the call, the key and whether it was answered, never the value:
+   * what an app saves belongs to the person using it, not on a diagnostics panel.
+   */
+  const bridgeLog = useState('runtime:bridge-log', () => [])
+
+  const record = (entry) => {
+    bridgeLog.value = [{ at: Date.now(), ...entry }, ...bridgeLog.value].slice(0, MAX_LOG)
+  }
+
+  const clearBridgeLog = () => {
+    bridgeLog.value = []
+  }
 
   /**
    * Builds a handler for one running app.
@@ -49,6 +70,26 @@ export function useAppBridge() {
 
     const dataFor = () => appData.value[appId] ?? {}
 
+    /**
+     * A plain copy of a stored value, safe to hand across the frame boundary.
+     *
+     * What comes out of the store is a Vue reactive proxy, and postMessage cannot clone a
+     * proxy — it throws "could not be cloned". So the host found an app's saved work, failed
+     * to hand it back, and the app started empty every time while saving perfectly well. That
+     * was the bug: the data was never lost, only undeliverable.
+     *
+     * A JSON round-trip rather than structuredClone, which refuses a proxy too. Everything
+     * here is JSON-serialisable by contract — storage.set will not accept anything that is not.
+     */
+    const plain = (value) => {
+      if (value === null || value === undefined) return null
+      try {
+        return JSON.parse(JSON.stringify(value))
+      } catch {
+        return null
+      }
+    }
+
     const handle = async (call, args) => {
       if (!permitted.includes(call)) {
         throw new Error('This app did not declare that it needed to do that')
@@ -57,7 +98,7 @@ export function useAppBridge() {
       if (call === 'storage.get') {
         const key = String(args?.key ?? '')
         if (!key || key.length > MAX_KEY) throw new Error('Bad key')
-        return dataFor()[key] ?? null
+        return plain(dataFor()[key])
       }
 
       if (call === 'storage.set') {
@@ -108,10 +149,14 @@ export function useAppBridge() {
       const id = message.id
       if (typeof id !== 'number' || typeof message.call !== 'string') return
 
+      const key = typeof message.args?.key === 'string' ? message.args.key : ''
+
       try {
         const result = await handle(message.call, message.args)
+        record({ call: message.call, key, ok: true, found: result !== null && result !== undefined })
         target()?.postMessage({ afronet: 1, id, ok: true, result }, '*')
       } catch (error) {
+        record({ call: message.call, key, ok: false, error: error.message })
         target()?.postMessage({ afronet: 1, id, ok: false, error: error.message }, '*')
       }
     }
@@ -123,5 +168,5 @@ export function useAppBridge() {
     }
   }
 
-  return { createBridge, KNOWN_CALLS }
+  return { createBridge, KNOWN_CALLS, bridgeLog, clearBridgeLog }
 }

@@ -41,6 +41,22 @@
       @load="onLoad"
     ></iframe>
 
+    <!--
+      Opening.
+
+      An iframe is a white rectangle until its document paints, and for a moment that is
+      indistinguishable from a broken app. This covers it until the frame reports that it
+      loaded — the same signal the runtime already trusts — and goes without a transition,
+      because a fade over an app that is already drawn reads as a second delay.
+    -->
+    <div
+      v-if="!ready && !stalled"
+      class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#ffffff]"
+    >
+      <UiSpinner />
+      <p class="text-[12.5px] text-[#606863]">Opening {{ title }}…</p>
+    </div>
+
     <div
       v-if="stalled"
       class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#ffffff] p-6 text-center"
