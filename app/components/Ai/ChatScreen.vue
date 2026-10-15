@@ -81,6 +81,7 @@
             <AiIcon name="plus" :size="18" class="sm:hidden" />
             <span class="hidden sm:inline">New chat</span>
           </button>
+          <AiBrainPanel />
           <AiAboutPanel />
           <button
             type="button"
@@ -125,7 +126,16 @@
             </div>
           </div>
 
-          <AiMessage v-for="m in messages" :key="m.id" :message="m" @retry="retry" />
+          <AiMessage
+            v-for="(m, i) in messages"
+            :key="m.id"
+            :message="m"
+            :question="m.role === 'assistant' && messages[i - 1]?.role === 'user' ? messages[i - 1].content : ''"
+            :is-last="i === messages.length - 1"
+            :generating="generating"
+            @retry="retry"
+            @ask-model="send(messages[i - 1].content, { skipBrain: true })"
+          />
         </div>
       </div>
 
@@ -136,7 +146,7 @@
             :placeholder="status === 'ready' ? 'Ask African Intelligence' : 'Download an AI to start chatting'"
             :generating="generating"
             :disabled="status !== 'ready'"
-            @submit="send"
+            @submit="(text) => send(text)"
             @stop="stop"
             @blocked="promptDownload"
           />

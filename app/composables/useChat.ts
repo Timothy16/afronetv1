@@ -24,12 +24,15 @@ export interface UiMessage {
     /** 'streaming' only exists on screen; what gets saved is always a final state. */
     status: 'done' | 'streaming' | 'stopped' | 'error'
     error?: string
+    /** 'brain': a saved correction shown instead of asking the model. */
+    source?: 'brain'
     model?: string
     stats?: GenerateStats
     createdAt: string
 }
 
-const SYSTEM_PROMPT = 'You are Afronet, a helpful assistant running offline on the user\'s device. '
+/** Also used by the brain test page, so it measures the prompt real chats get. */
+export const SYSTEM_PROMPT = 'You are Afronet, a helpful assistant running offline on the user\'s device. '
     + 'Answer clearly and concisely.'
 
 /** The chat the previous build kept outside conversations; imported once, then removed. */
@@ -49,7 +52,7 @@ function logAliveAfterReply() {
 }
 
 function toUi(m: StoredMessage): UiMessage {
-    return { id: m.id, seq: m.seq ?? 0, role: m.role, content: m.content, status: m.status, model: m.model, stats: m.stats, createdAt: m.createdAt }
+    return { id: m.id, seq: m.seq ?? 0, role: m.role, content: m.content, status: m.status, source: m.source, model: m.model, stats: m.stats, createdAt: m.createdAt }
 }
 
 function toStored(m: UiMessage, conversationId: string, userId: string): StoredMessage {
@@ -62,6 +65,7 @@ function toStored(m: UiMessage, conversationId: string, userId: string): StoredM
         content: m.content,
         // Nothing half-written is ever saved.
         status: m.status === 'streaming' ? 'stopped' : m.status,
+        source: m.source,
         model: m.model,
         stats: m.stats,
         createdAt: m.createdAt,
@@ -153,8 +157,15 @@ async function persist(message: UiMessage, conversation: StoredConversation) {
  * Conversation for the model: completed user/assistant pairs plus the new question.
  * Turns whose reply failed or came back empty are skipped so roles keep alternating.
  */
-function buildHistory(question: string): ChatMessage[] {
-    const history: ChatMessage[] = [{ role: 'system', content: SYSTEM_PROMPT }]
+function buildHistory(question: string, hint?: { question: string, answer: string }): ChatMessage[] {
+    // A related correction from the user's brain, as a fact the model should rely on.
+    const system = hint
+        ? `${SYSTEM_PROMPT}
+
+Verified facts:
+- When asked "${hint.question}", the correct answer is: ${hint.answer}`
+        : SYSTEM_PROMPT
+    const history: ChatMessage[] = [{ role: 'system', content: system }]
     const done = messages.value.slice(0, -2) // exclude the new user message + pending reply
     for (let i = 0; i + 1 < done.length; i++) {
         const user = done[i]!
@@ -168,7 +179,13 @@ function buildHistory(question: string): ChatMessage[] {
     return history
 }
 
-async function send(text: string) {
+/**
+ * Asks a question. The user's brain is checked first: a question they already corrected gets their
+ * answer back as-is (the model can't be trusted to repeat it — the brain test showed it often
+ * sticks to what it believed), a related one passes the correction to the model as a fact.
+ * `skipBrain` asks the model regardless ("Not what I asked").
+ */
+async function send(text: string, { skipBrain = false } = {}) {
     const question = text.trim()
     if (!question || generating.value) return
 
@@ -188,9 +205,23 @@ async function send(text: string) {
     const revealer = createRevealer((text) => { live.content += text })
 
     try {
+        const match = skipBrain ? null : await useBrain().lookup(question)
+        if (match?.kind === 'strong') {
+            live.content = match.entry.answer
+            live.source = 'brain'
+            // The date shows how old the fact is; things like "who is president" go stale.
+            const saved = new Date(match.entry.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+            live.model = `From your brain · saved ${saved}`
+            live.status = 'done'
+            logEvent(`reply from brain (match ${match.score.toFixed(2)})`)
+            return
+        }
+
         const engine = llm.engine()
         live.model = llm.modelLabel()
-        for await (const piece of engine.generate(buildHistory(question), { signal: controller.signal })) {
+        if (match) logEvent(`brain hint added (match ${match.score.toFixed(2)})`)
+        const history = buildHistory(question, match?.entry)
+        for await (const piece of engine.generate(history, { signal: controller.signal })) {
             revealer.push(piece)
         }
         // Stopped: show what was generated right away; otherwise let the typing finish smoothly.

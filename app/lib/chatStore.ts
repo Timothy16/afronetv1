@@ -13,11 +13,13 @@
 import type { GenerateStats } from './llm'
 
 const DB_NAME = 'afronet'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 export const CONVERSATIONS = 'conversations'
 export const MESSAGES = 'messages'
 export const OUTBOX = 'outbox'
+/** The personal brain: answers the user corrected (version 2). */
+export const BRAIN = 'brain'
 
 export interface StoredConversation {
     id: string
@@ -43,17 +45,32 @@ export interface StoredMessage {
     role: 'user' | 'assistant'
     content: string
     status: 'done' | 'stopped' | 'error'
+    /** 'brain': the reply is a saved correction, not something the model wrote. */
+    source?: 'brain'
     /** Which model wrote an assistant reply. */
     model?: string
     stats?: GenerateStats
     createdAt: string
 }
 
+/** A correction the user taught: next time this question is asked, this is the answer. */
+export interface BrainEntry {
+    id: string
+    userId: string
+    question: string
+    answer: string
+    category: string
+    createdAt: string
+    /** Shown with the answer, so an outdated fact is easy to spot. */
+    updatedAt: string
+    deletedAt: string | null
+}
+
 /** A server operation waiting to be sent (filled in the sync phase). */
 export interface OutboxOp {
     seq?: number
     userId: string
-    kind: 'conversation' | 'message'
+    kind: 'conversation' | 'message' | 'brain'
     id: string
     conversationId?: string
     createdAt: string
@@ -95,8 +112,17 @@ function openDb() {
             if (!db.objectStoreNames.contains(OUTBOX)) {
                 db.createObjectStore(OUTBOX, { keyPath: 'seq', autoIncrement: true })
             }
+            if (!db.objectStoreNames.contains(BRAIN)) {
+                const store = db.createObjectStore(BRAIN, { keyPath: 'id' })
+                store.createIndex('userId', 'userId')
+            }
         }
-        request.onsuccess = () => resolve(request.result)
+        request.onsuccess = () => {
+            const db = request.result
+            // Let a newer version of the app in another tab upgrade the database.
+            db.onversionchange = () => { db.close(); dbPromise = null }
+            resolve(db)
+        }
         request.onerror = () => reject(request.error ?? new Error('Could not open device storage'))
         request.onblocked = () => reject(new Error('Device storage is busy in another tab'))
     }).catch((err) => {
@@ -165,6 +191,20 @@ export async function hardDeleteConversation(id: string) {
     await run(CONVERSATIONS, 'readwrite', s => s.delete(id))
 }
 
+/** The user's corrections, deleted ones left out. */
+export async function listBrain(userId: string): Promise<BrainEntry[]> {
+    const all = await run<BrainEntry[]>(BRAIN, 'readonly', s => s.index('userId').getAll(userId))
+    return all.filter(e => !e.deletedAt)
+}
+
+export function getBrainEntry(id: string) {
+    return run<BrainEntry | undefined>(BRAIN, 'readonly', s => s.get(id))
+}
+
+export function putBrainEntry(entry: BrainEntry) {
+    return run(BRAIN, 'readwrite', s => s.put(plain(entry)))
+}
+
 /** Pending server operations, oldest first. */
 export async function listOutbox(userId: string): Promise<OutboxOp[]> {
     const all = await run<OutboxOp[]>(OUTBOX, 'readonly', s => s.getAll())
@@ -182,12 +222,15 @@ export function queueOp(op: OutboxOp) {
     })
 }
 
-/** Everything belonging to one account — used on sign-out, since devices are shared. */
+/** Everything belonging to one account (chats and brain) — used on sign-out, since devices are shared. */
 export async function clearUserData(userId: string) {
     const conversations = await run<StoredConversation[]>(CONVERSATIONS, 'readonly', s => s.index('userId').getAll(userId))
     const messages = await run<StoredMessage[]>(MESSAGES, 'readonly', s => s.index('userId').getAll(userId))
     for (const m of messages) await run(MESSAGES, 'readwrite', s => s.delete(m.id))
     for (const c of conversations) await run(CONVERSATIONS, 'readwrite', s => s.delete(c.id))
+    // The brain is restored from the account at the next sign-in, like the chats.
+    const brain = await run<BrainEntry[]>(BRAIN, 'readonly', s => s.index('userId').getAll(userId))
+    for (const e of brain) await run(BRAIN, 'readwrite', s => s.delete(e.id))
     const ops = await run<OutboxOp[]>(OUTBOX, 'readonly', s => s.getAll())
     for (const op of ops) {
         if (op.userId === userId && op.seq !== undefined) await run(OUTBOX, 'readwrite', s => s.delete(op.seq!))
