@@ -1,11 +1,18 @@
 <!-- app/components/Store/ReviewDialog.vue -->
 
 <!--
-  Rating an app, and the two things people actually want to say instead — this is broken,
-  or please add this. Separating them keeps bug reports out of the star average and gives
-  the developer something they can act on.
+  Rating an app.
 
-  Only someone who has the app, or has paid for it, can open this.
+  There were three kinds here — a review, a bug report and a feature request — sharing one row
+  per person. So filing a bug silently replaced the review you had already written, and took
+  your stars out of the app's average with it. They were also messages to a developer who has
+  nowhere to read them.
+
+  So: one review, and whatever someone wants to say goes in it. A broken app gets two stars and
+  a sentence about what broke, which the developer reads in the same place either way. Bug
+  reports come back when there is a developer inbox for them to arrive in.
+
+  Only someone who has the app can open this.
 -->
 <template>
   <UiModal :open="open" :title="existing ? 'Edit your review' : 'Rate this app'" @close="emit('close')">
@@ -27,24 +34,23 @@
       </button>
     </div>
 
-    <div class="mt-4">
-      <UiSegmentedControl v-model="type" :options="kinds" size="sm" />
-    </div>
-
     <UiTextarea
       v-model="body"
       :rows="4"
-      :aria-label="type === 'bug' ? 'What went wrong' : 'Your review'"
-      :placeholder="type === 'bug' ? 'What happened? What did you expect?' : 'What do you like or dislike?'"
-      class="mt-3"
+      aria-label="Your review"
+      placeholder="What do you like or dislike? If something is broken, say what happened."
+      class="mt-4"
     />
 
     <p class="mt-2 text-[12px] text-[#8f9792]">Reviews are public and show your first name. Please be respectful.</p>
 
     <div class="mt-6 flex flex-wrap justify-end gap-2">
+      <UiButton v-if="existing" variant="danger" :disabled="sending" class="mr-auto" @click="remove">
+        Remove
+      </UiButton>
       <UiButton variant="secondary" @click="emit('close')">Cancel</UiButton>
-      <UiButton :disabled="!rating || body.trim().length < 4" @click="submit">
-        {{ existing ? 'Save changes' : 'Post' }}
+      <UiButton :disabled="!rating || body.trim().length < 4 || sending" @click="submit">
+        {{ sending ? 'Saving…' : existing ? 'Save changes' : 'Post' }}
       </UiButton>
     </div>
   </UiModal>
@@ -60,16 +66,11 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const { online, purchases, addReview, updateReview, notify } = useAppLibrary()
+const { saveReview, removeReview, notify } = useAppLibrary()
 
-const kinds = [
-  { value: 'review', label: 'Review' },
-  { value: 'bug', label: 'Report a bug' },
-  { value: 'feature', label: 'Suggest a feature' },
-]
+const sending = ref(false)
 
 const rating = ref(props.existing?.rating ?? 0)
-const type = ref(props.existing?.type ?? 'review')
 const body = ref(props.existing?.body ?? '')
 
 // Reset each time it opens, so yesterday's half-written review does not reappear.
@@ -78,29 +79,41 @@ watch(
   ([isOpen]) => {
     if (!isOpen) return
     rating.value = props.existing?.rating ?? 0
-    type.value = props.existing?.type ?? 'review'
     body.value = props.existing?.body ?? ''
   },
 )
 
-const submit = () => {
-  if (props.existing) {
-    updateReview(props.existing.id, { rating: rating.value, type: type.value, body: body.value })
-  } else {
-    addReview({
-      appId: props.appId,
-      rating: rating.value,
-      type: type.value,
-      body: body.value,
-      verified: purchases.value.some((p) => p.appId === props.appId && p.status === 'verified'),
-    })
-  }
-  notify(
-    `${props.existing ? 'Review updated' : 'Review posted'} · ${
-      online.value ? 'visible after automated moderation.' : 'saved — it will post when you reconnect.'
-    }`,
-    'success',
-  )
+/**
+ * Posts the review and says what actually happened.
+ *
+ * It used to promise "visible after automated moderation", which described a step nobody
+ * had built — a review appears straight away. Writing again edits what you said rather than
+ * adding a second, which is why there is no second thing to post.
+ */
+const submit = async () => {
+  if (sending.value || !rating.value) return
+  sending.value = true
+
+  const ok = await saveReview(props.appId, { rating: rating.value, body: body.value })
+
+  sending.value = false
+  if (!ok) return
+
+  notify(props.existing ? 'Your review has been updated.' : 'Your review has been posted.', 'success')
+  emit('close')
+}
+
+/** Taking back what you said, which also takes your stars out of the average. */
+const remove = async () => {
+  if (sending.value || !props.existing) return
+  sending.value = true
+
+  const ok = await removeReview(props.appId)
+
+  sending.value = false
+  if (!ok) return
+
+  notify('Your review has been removed.', 'success')
   emit('close')
 }
 </script>

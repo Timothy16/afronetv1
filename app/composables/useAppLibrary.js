@@ -32,7 +32,6 @@ import {
   purchaseRef,
   seedInstalled,
   seedPurchases,
-  seedReviews,
   seedSaved,
   uid,
 } from '~/data/store'
@@ -54,7 +53,8 @@ export function useAppLibrary() {
   const purchases = useState('store:purchases', () => seedPurchases.map((p) => ({ ...p })))
   const saved = useState('store:saved', () => [...seedSaved])
   const savedHydrated = useState('store:saved-hydrated', () => false)
-  const reviews = useState('store:reviews', () => seedReviews.map((r) => ({ ...r })))
+  // Keyed by app id, filled when an app's page opens. Nothing is seeded.
+  const reviews = useState('store:reviews', () => ({}))
   const freeMB = useState('store:free-mb', () => DEMO_FREE_MB)
   const freeMBMeasured = useState('store:free-mb-measured', () => false)
 
@@ -495,24 +495,63 @@ export function useAppLibrary() {
   }
 
   // --- reviews and saves -------------------------------------------------
-  const addReview = (review) => {
-    reviews.value = [
-      {
-        ...review,
-        id: uid('r'),
-        date: todayISO(),
-        author: useStoreUser().initialled.value,
-        mine: true,
-      },
-      ...reviews.value,
-    ]
+  /**
+   * One app's reviews, fetched when its page opens.
+   *
+   * Kept per app rather than in one list, so opening a second app does not have to work out
+   * which of the two the reviews in hand belong to.
+   */
+  const loadReviews = async (appId) => {
+    try {
+      const res = await apiFetch(`/api/apps/${appId}/reviews`)
+      if (Array.isArray(res?.data)) reviews.value = { ...reviews.value, [appId]: res.data }
+    } catch {
+      // Leave whatever was there. An app page without its reviews still works.
+    }
   }
 
-  const updateReview = (id, patch) => {
-    reviews.value = reviews.value.map((r) => (r.id === id ? { ...r, ...patch } : r))
+  const reviewsFor = (appId) => reviews.value[appId] ?? []
+
+  /** The person's own review of an app, if they have written one. */
+  const myReview = (appId) => reviewsFor(appId).find((r) => r.mine) ?? null
+
+  /** Moves the stars on the listing in hand, so the page does not need reloading. */
+  const applyRating = (appId, totals) => {
+    if (!totals || typeof totals.rating !== 'number') return
+    catalogue.value = catalogue.value.map((a) =>
+      a.id === appId ? { ...a, rating: totals.rating, ratingCount: totals.ratingCount } : a,
+    )
   }
 
-  const reviewsFor = (appId) => reviews.value.filter((r) => r.appId === appId && !r.flagged)
+  /**
+   * Writes a review, or changes the one already written.
+   *
+   * The server decides whether it is allowed, who it is signed by, and what the app's rating
+   * becomes — it answers with the new totals. Nothing here calculates a rating.
+   */
+  const saveReview = async (appId, { rating, body }) => {
+    try {
+      const res = await apiFetch(`/api/apps/${appId}/reviews`, { method: 'POST', body: { rating, body } })
+      applyRating(appId, res?.data)
+      await loadReviews(appId)
+      return true
+    } catch (e) {
+      notify(e?.data?.message || 'That review could not be saved.', 'error')
+      return false
+    }
+  }
+
+  const removeReview = async (appId) => {
+    try {
+      const res = await apiFetch(`/api/apps/${appId}/reviews`, { method: 'DELETE' })
+      applyRating(appId, res?.data)
+      await loadReviews(appId)
+      return true
+    } catch (e) {
+      notify(e?.data?.message || 'That review could not be removed.', 'error')
+      return false
+    }
+  }
 
   const SAVED_KEY = 'afronet:saved-apps'
   const INSTALLED_KEY = 'afronet:installed-apps'
@@ -649,8 +688,10 @@ export function useAppLibrary() {
     setAppData,
     setPermission,
     recordPurchase,
-    addReview,
-    updateReview,
+    loadReviews,
+    myReview,
+    saveReview,
+    removeReview,
     toggleSaved,
     hydrateSaved,
     hydrateInstalled,

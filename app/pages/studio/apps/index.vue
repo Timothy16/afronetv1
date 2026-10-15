@@ -126,6 +126,14 @@
                   <i class="fa-solid fa-box-archive w-4 text-center text-[11px] text-[#606863]" aria-hidden="true"></i>
                   Archive
                 </button>
+                <button
+                  v-else
+                  class="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium text-[#121614] hover:bg-[#f7f7f4]"
+                  @click="bringBack(a)"
+                >
+                  <i class="fa-solid fa-box-open w-4 text-center text-[11px] text-[#606863]" aria-hidden="true"></i>
+                  Restore
+                </button>
               </div>
             </td>
           </tr>
@@ -176,7 +184,7 @@ import { allStatuses, statusLabel } from '~/data/studio'
 definePageMeta({ layout: 'studio' })
 useHead({ title: 'My Apps · Afronet Studio' })
 
-const { devApps, withdraw, liveStats } = useStudio()
+const { devApps, withdraw, restore, liveStats } = useStudio()
 
 const q = ref('')
 const status = ref('all')
@@ -226,5 +234,11 @@ const ask = (app, kind) => {
 const run = () => {
   if (!confirm.value) return
   withdraw(confirm.value.app.id, confirm.value.kind)
+}
+
+// Restoring takes nothing away and promises nothing, so it needs no confirmation.
+const bringBack = (app) => {
+  menu.value = ''
+  restore(app.id)
 }
 </script>

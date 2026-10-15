@@ -120,9 +120,6 @@
                   <i class="fa-solid fa-circle-check text-[9px]" aria-hidden="true"></i>
                   Verified purchase
                 </UiBadge>
-                <UiBadge v-if="r.type !== 'review'" tone="muted">
-                  {{ r.type === 'bug' ? 'Bug report' : 'Feature request' }}
-                </UiBadge>
                 <span class="ml-auto text-[12px] text-[#8f9792]">{{ formatDate(r.date) }}</span>
               </div>
               <p class="mt-2 text-[14px] leading-relaxed text-[#121614]">{{ r.body }}</p>
@@ -130,13 +127,6 @@
                 <p class="font-medium text-[#121614]">Developer response</p>
                 <p class="mt-0.5 text-[#606863]">{{ r.reply }}</p>
               </div>
-              <button
-                v-if="!r.mine"
-                class="mt-2 text-[12px] font-medium text-[#8f9792] hover:text-[#b22c26]"
-                @click="report = `review by ${r.author}`"
-              >
-                Report
-              </button>
             </li>
           </ul>
           <p v-else class="mt-3 rounded-2xl border border-dashed border-[#e4e4de] p-5 text-[13.5px] text-[#606863]">
@@ -217,15 +207,8 @@
           </ul>
         </section>
 
-        <div class="flex items-center justify-between gap-3 px-1">
+        <div class="px-1">
           <StoreDemoTag />
-          <button
-            class="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#606863] hover:text-[#b22c26]"
-            @click="report = app.name"
-          >
-            <i class="fa-solid fa-flag text-[11px]" aria-hidden="true"></i>
-            Report app
-          </button>
         </div>
       </aside>
     </div>
@@ -238,7 +221,6 @@
       :existing="editing"
       @close="review = false"
     />
-    <StoreReportDialog :open="Boolean(report)" :subject="report" @close="report = ''" />
   </div>
 
   <div v-else>
@@ -256,7 +238,7 @@ definePageMeta({ layout: 'store' })
 const route = useRoute()
 const router = useRouter()
 
-const { online, saved, toggleSaved, getApp, getInstalled, getDownload, hasEntitlement, hasUpdate, reviewsFor, notify } =
+const { online, saved, toggleSaved, getApp, getInstalled, getDownload, hasEntitlement, hasUpdate, reviewsFor, loadReviews, removeReview, notify } =
   useAppLibrary()
 
 const app = computed(() => getApp(String(route.params.id || '')))
@@ -267,7 +249,6 @@ const install = ref(false)
 const buy = ref(false)
 const review = ref(false)
 const editing = ref(null)
-const report = ref('')
 
 const inst = computed(() => getInstalled(app.value.id))
 const task = computed(() => getDownload(app.value.id))
@@ -276,6 +257,11 @@ const updateReady = computed(() => hasUpdate(app.value.id))
 const suspended = computed(() => app.value.status === 'suspended')
 const isSaved = computed(() => saved.value.includes(app.value.id))
 const appReviews = computed(() => reviewsFor(app.value.id))
+
+// Fetched when the page opens, and again if the person moves to another app without leaving
+// the route.
+onMounted(() => loadReviews(app.value.id))
+watch(() => app.value?.id, (id) => { if (id) loadReviews(id) })
 const mine = computed(() => appReviews.value.find((r) => r.mine))
 
 const facts = computed(() => {

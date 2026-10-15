@@ -1,7 +1,12 @@
 <!-- app/pages/studio/apps/[id]/pricing.vue -->
 
 <!--
-  Free, or a price. That is the whole decision in this release.
+  Free, for now.
+
+  Paid is shown and cannot be chosen. Taking money is the easy half; paying a student developer
+  in Lagos is the hard one, and that question is open — so offering the choice would be selling
+  something nobody can deliver. It is left visible rather than hidden, because a developer
+  deciding where to publish deserves to know it is coming.
 
   Deliberately not here: the commission and fee breakdown. Afronet's rate has not been set,
   and a screen showing a developer what they would keep — based on a number we invented —
@@ -26,16 +31,26 @@
             v-for="m in models"
             :key="m.id"
             :aria-pressed="app.pricingModel === m.id ? 'true' : 'false'"
+            :disabled="m.soon"
             class="rounded-2xl border p-4 text-left transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]"
             :class="
-              app.pricingModel === m.id
-                ? 'border-[#121614] bg-[#ffffff]'
-                : 'border-[#e4e4de] bg-[#ffffff] hover:border-[#0b5d3e]/40'
+              m.soon
+                ? 'cursor-not-allowed border-[#e4e4de] bg-[#f7f7f4]'
+                : app.pricingModel === m.id
+                  ? 'border-[#121614] bg-[#ffffff]'
+                  : 'border-[#e4e4de] bg-[#ffffff] hover:border-[#0b5d3e]/40'
             "
             @click="choose(m.id)"
           >
-            <span class="block text-[14.5px] font-semibold text-[#121614]">{{ m.title }}</span>
-            <span class="mt-1 block text-[13px] leading-relaxed text-[#606863]">{{ m.body }}</span>
+            <span class="flex flex-wrap items-center gap-2">
+              <span class="text-[14.5px] font-semibold" :class="m.soon ? 'text-[#8f9792]' : 'text-[#121614]'">
+                {{ m.title }}
+              </span>
+              <UiBadge v-if="m.soon" tone="muted">Coming soon</UiBadge>
+            </span>
+            <span class="mt-1 block text-[13px] leading-relaxed" :class="m.soon ? 'text-[#8f9792]' : 'text-[#606863]'">
+              {{ m.body }}
+            </span>
           </button>
         </div>
       </section>
@@ -127,7 +142,7 @@ useHead({ title: computed(() => `Pricing · ${app.value?.name ?? 'App'} · Afron
 
 const models = [
   { id: 'free', title: 'Free', body: 'The fastest way to be used. A good choice for a first app.' },
-  { id: 'paid', title: 'Paid download', body: 'One price, paid once. Restorable on any device.' },
+  { id: 'paid', title: 'Paid download', body: 'One price, paid once. Restorable on any device.', soon: true },
 ]
 
 const currencies = [
@@ -143,6 +158,10 @@ const update = (patch) => updateDevApp(app.value.id, patch)
 const valid = computed(() => app.value.pricingModel === 'free' || app.value.price >= 100)
 
 const choose = (model) => {
+  // The second lock. A disabled attribute is a suggestion — a stray keypress, an assistive
+  // tool, or a browser that ignores it must still not be able to set a price nobody can pay.
+  if (models.find((m) => m.id === model)?.soon) return
+
   update({ pricingModel: model, price: model === 'free' ? 0 : app.value.price || 500 })
 }
 

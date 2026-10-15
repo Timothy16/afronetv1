@@ -340,6 +340,19 @@ export function useStudio() {
    * after the developer thought they had pulled it. The listing is suspended rather than
    * deleted: people who already have the app keep it, which is what the confirmation promises.
    */
+  /** Brings an archived app back to the list it was taken out of. */
+  const restore = async (id) => {
+    const app = findDevApp(id)
+    if (!app) return
+    try {
+      const res = await apiFetch(`/api/studio/apps/${id}/restore`, { method: 'POST' })
+      replaceLocal(res?.data)
+      notify(`${app.name} restored. It is not back in the store until you publish it.`, 'success')
+    } catch (e) {
+      notify(e?.data?.message || 'That app could not be restored.', 'error')
+    }
+  }
+
   const withdraw = async (id, kind) => {
     const app = findDevApp(id)
     if (!app) return
@@ -396,6 +409,7 @@ export function useStudio() {
     submitForReview,
     resolveComment,
     withdraw,
+    restore,
     shipUpdate,
     notify,
   }

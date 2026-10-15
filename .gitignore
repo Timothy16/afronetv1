@@ -25,3 +25,6 @@ logs
 
 # Docs
 docs
+
+# Verification suite — kept out of the repo for now
+verify

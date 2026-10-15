@@ -83,18 +83,8 @@ export const seedInstalled = []
 export const seedPurchases = []
 export const seedSaved = []
 
-// Reviews stay as stand-ins until the real ones have somewhere to live. They belong to apps
-// that are gone, so nothing renders them; they are kept so the screens can be looked at.
-export const seedReviews = [
-  { id: 'r1', appId: 'quiz-master', author: 'Bisi A.', rating: 5, date: '2026-10-07', body: 'Used it during NEPA cuts all week. The explanations are better than my textbook.', verified: false, type: 'review', reply: 'Thank you Bisi! Physics is coming next month.' },
-  { id: 'r2', appId: 'quiz-master', author: 'Ibrahim M.', rating: 4, date: '2026-10-05', body: 'Great app. Please add a dark mode for night reading.', verified: false, type: 'feature' },
-  { id: 'r3', appId: 'quiz-master', author: 'Ngozi O.', rating: 2, date: '2026-10-02', body: 'Timer resets when I switch to another app and come back.', verified: false, type: 'bug' },
-  { id: 'r4', appId: 'flashdeck-pro', author: 'Kwame D.', rating: 5, date: '2026-10-08', body: 'Worth every naira. Spaced repetition actually works.', verified: true, type: 'review' },
-  { id: 'r5', appId: 'flashdeck-pro', author: 'Fatima S.', rating: 4, date: '2026-09-30', body: 'Would love dark mode and image import from camera.', verified: true, type: 'feature' },
-  { id: 'r6', appId: 'flashdeck-pro', author: 'anon_user_22', rating: 1, date: '2026-09-28', body: 'Download free version from my link instead!!!', verified: false, type: 'review', flagged: true },
-  { id: 'r7', appId: 'gpa-calc', author: 'Tobi K.', rating: 5, date: '2026-10-01', body: 'Accurate and tiny. Saved my sanity.', verified: false, type: 'review' },
-  { id: 'r8', appId: 'campus-map', author: 'Wairimu N.', rating: 4, date: '2026-09-29', body: 'Found my exam hall in 30 seconds. Big download though.', verified: false, type: 'review' },
-]
+// Reviews live in the database now and are fetched per app when its page opens. There were
+// eight stand-ins here, all for apps that no longer exist.
 
 // The signed-in person comes from the session — see useStoreUser. There was a mock one here
 // called Amara Okafor, which meant Studio greeted every developer by somebody else's name.
