@@ -82,6 +82,19 @@
       </div>
     </div>
 
+    <!-- Into the App Store. A plain anchor, not a NuxtLink: /chat is cross-origin isolated
+         per document, so leaving it (and returning to it) has to be a full page load. -->
+    <div class="border-t border-[#e4e4de] px-3 py-2">
+      <a
+        href="/store"
+        class="flex items-center gap-2.5 rounded-lg px-2 py-2 text-[13px] text-[#606863] transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614]"
+      >
+        <AiIcon name="apps" :size="16" />
+        <span class="flex-1 truncate">App Store</span>
+        <AiIcon name="chevron" :size="14" class="-rotate-90" />
+      </a>
+    </div>
+
     <div class="border-t border-[#e4e4de] px-3 py-3">
       <div class="flex items-center gap-2.5">
         <!-- Initials rather than the stored photo: it lives on another domain, which this

@@ -124,8 +124,11 @@ export default defineNuxtConfig({
     baseUrl: "",
     resendApiKey: '',
     sessionSecret: "",
-    dciBaseUrl: 'http://localhost:3001', 
-    dciApiKey: 'dci_afronet_8ed915646814e14612234d560fcf4850a90fe9658c772b03', 
+    geminiApiKey: "",
+    claudeApiKey: "",
+    deepseekApiKey: "",
+    dciBaseUrl: 'http://localhost:3001',
+    dciApiKey: 'dci_afronet_8ed915646814e14612234d560fcf4850a90fe9658c772b03',
 
     public: {
       apiBase: '/api',

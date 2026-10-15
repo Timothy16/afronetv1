@@ -133,11 +133,17 @@ const percent = computed(() => Math.floor(progress.value?.percent ?? 0))
 const starting = computed(() => status.value === 'loading' && (progress.value?.phase === 'init' || fromCache.value))
 
 // Elapsed seconds while starting, so a slow phone looks busy rather than frozen.
-const now = ref(Date.now())
+//
+// The clock is read when the counter starts rather than when the component is set up. Setup
+// runs on the server and again in the browser, at two different moments, so a clock read there
+// gives two different answers for the same render.
+const now = ref(0)
 let timer
 watch(starting, (on) => {
   clearInterval(timer)
-  if (on) timer = setInterval(() => { now.value = Date.now() }, 1000)
+  if (!on || !import.meta.client) return
+  now.value = Date.now()
+  timer = setInterval(() => { now.value = Date.now() }, 1000)
 }, { immediate: true })
 onBeforeUnmount(() => clearInterval(timer))
 
