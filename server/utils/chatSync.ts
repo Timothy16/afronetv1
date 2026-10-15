@@ -46,6 +46,18 @@ export function serializeConversation(c: any) {
     }
 }
 
+export function serializeBrainEntry(e: any) {
+    return {
+        id: e._id,
+        question: e.question,
+        answer: e.answer,
+        category: e.category,
+        createdAt: e.createdAt,
+        updatedAt: e.updatedAt,
+        deletedAt: e.deletedAt ?? null,
+    }
+}
+
 export function serializeMessage(m: any) {
     return {
         id: m._id,

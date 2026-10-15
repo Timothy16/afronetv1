@@ -66,8 +66,50 @@
           >
             <AiIcon name="refresh" :size="14" />
           </button>
+          <button
+            v-if="canCorrect && !correcting"
+            aria-label="Correct this answer"
+            title="Correct this answer"
+            class="rounded-md p-1.5 transition-colors duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:bg-[#f7f7f4] hover:text-[#121614]"
+            @click="startCorrecting"
+          >
+            <AiIcon name="edit" :size="14" />
+          </button>
           <span class="ml-1 text-[11px]">{{ footer }}</span>
+          <button
+            v-if="message.source === 'brain' && isLast"
+            class="ml-1 text-[11px] text-[#0b5d3e] hover:underline disabled:opacity-40"
+            :disabled="generating"
+            @click="emit('ask-model')"
+          >
+            Not what I asked
+          </button>
         </div>
+
+        <!-- Teaching the brain: saved for this account, used the next time this is asked. -->
+        <form v-if="correcting" class="mt-3 rounded-2xl border border-[#e4e4de] p-3" @submit.prevent="saveCorrection">
+          <label class="block text-[12px] font-medium text-[#606863]" :for="`fix-${message.id}`">What is the right answer?</label>
+          <textarea
+            :id="`fix-${message.id}`"
+            v-model="answer"
+            rows="3"
+            class="mt-1.5 w-full resize-y rounded-xl border border-[#e4e4de] px-3 py-2 text-[14px] text-[#121614] outline-none focus:border-[#0b5d3e]"
+          />
+          <div class="mt-2 flex items-center justify-end gap-2">
+            <button type="button" class="rounded-lg px-3 py-1.5 text-[12px] text-[#606863] hover:bg-[#f7f7f4]" @click="correcting = false">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="rounded-lg bg-[#0b5d3e] px-3 py-1.5 text-[12px] font-medium text-[#ffffff] hover:opacity-90 disabled:opacity-40"
+              :disabled="!answer.trim() || saving"
+            >
+              Save to my brain
+            </button>
+          </div>
+          <p v-if="saveError" class="mt-2 text-[12px] text-[#b22c26]">{{ saveError }}</p>
+        </form>
+        <p v-else-if="savedNote" class="mt-2 text-[12px] text-[#0b5d3e]">{{ savedNote }}</p>
       </div>
     </div>
 
@@ -81,9 +123,13 @@ import { useAfronetUserStore } from '~/stores/afronetUser'
 
 const props = defineProps({
   message: { type: Object, required: true },
+  // The question this reply answers; without it the reply can't be corrected.
+  question: { type: String, default: '' },
+  isLast: { type: Boolean, default: false },
+  generating: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['retry'])
+const emit = defineEmits(['retry', 'ask-model'])
 
 const userStore = useAfronetUserStore()
 
@@ -92,13 +138,46 @@ const userName = computed(() => userStore.fullName || 'You')
 const html = computed(() => renderMarkdown(props.message.content || ''))
 const canRetry = computed(() => props.message.status === 'error' || props.message.status === 'stopped')
 
-// "AfroIntel · on this device · 24.5 tok/s"
+// "AfroIntel · on this device · 24.5 tok/s", or "From your brain · saved 12 Oct 2026"
 const footer = computed(() => {
+  if (props.message.source === 'brain') return props.message.model || 'From your brain'
   const parts = [props.message.model || 'AfroIntel', 'on this device']
   const tps = props.message.stats?.tokensPerSecond
   if (tps) parts.push(`${tps.toFixed(1)} tok/s`)
   return parts.join(' · ')
 })
+
+const canCorrect = computed(() =>
+  Boolean(props.question) && (props.message.status === 'done' || props.message.status === 'stopped'))
+
+const correcting = ref(false)
+const answer = ref('')
+const saving = ref(false)
+const saveError = ref('')
+const savedNote = ref('')
+
+const startCorrecting = () => {
+  answer.value = ''
+  saveError.value = ''
+  correcting.value = true
+}
+
+const saveCorrection = async () => {
+  saving.value = true
+  saveError.value = ''
+  try {
+    const entry = await useBrain().saveCorrection(props.question, answer.value)
+    if (!entry) throw new Error('Sign in to save corrections.')
+    correcting.value = false
+    savedNote.value = `Saved to your brain under ${entry.category}. Ask this again and you'll get this answer.`
+  }
+  catch (err) {
+    saveError.value = err instanceof Error ? err.message : 'Could not save. Try again.'
+  }
+  finally {
+    saving.value = false
+  }
+}
 
 const copied = ref(false)
 const copy = async () => {
