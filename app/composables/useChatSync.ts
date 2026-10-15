@@ -1,6 +1,6 @@
 // app/composables/useChatSync.ts
 //
-// Keeps the device's conversations and the user's account in step.
+// Keeps the device's conversations and personal brain and the user's account in step.
 //
 // Push: every local write leaves an entry in the outbox; this sends them in order and removes
 // each one once the server has it. Ids come from the device, so re-sending after a dropped
@@ -11,6 +11,9 @@
 
 import {
     deleteOp,
+    getBrainEntry,
+    listBrain,
+    putBrainEntry,
     listConversations,
     getConversation,
     getMessage,
@@ -20,6 +23,7 @@ import {
     listOutbox,
     putConversation,
     putMessage,
+    type BrainEntry,
     type OutboxOp,
     type StoredConversation,
 } from '~/lib/chatStore'
@@ -38,20 +42,26 @@ let backoffMs = 0
 const FIRST_RETRY_MS = 5_000
 const MAX_RETRY_MS = 5 * 60_000
 
-const SINCE_KEY = (userId: string) => `afronet:lastsync:${userId}`
+/** Conversations and the brain each remember how far they have caught up. */
+type SyncStream = 'chats' | 'brain'
+const SINCE_KEY = (userId: string, stream: SyncStream) =>
+    stream === 'chats' ? `afronet:lastsync:${userId}` : `afronet:lastsync:${stream}:${userId}`
 
-function readSince(userId: string) {
-    try { return localStorage.getItem(SINCE_KEY(userId)) }
+function readSince(userId: string, stream: SyncStream = 'chats') {
+    try { return localStorage.getItem(SINCE_KEY(userId, stream)) }
     catch { return null }
 }
 
-function writeSince(userId: string, value: string) {
-    try { localStorage.setItem(SINCE_KEY(userId), value) }
+function writeSince(userId: string, value: string, stream: SyncStream = 'chats') {
+    try { localStorage.setItem(SINCE_KEY(userId, stream), value) }
     catch { /* storage unavailable: we just re-fetch more next time */ }
 }
 
 export function forgetSince(userId: string) {
-    try { localStorage.removeItem(SINCE_KEY(userId)) }
+    try {
+        localStorage.removeItem(SINCE_KEY(userId, 'chats'))
+        localStorage.removeItem(SINCE_KEY(userId, 'brain'))
+    }
     catch { /* nothing to clean up */ }
 }
 
@@ -82,6 +92,23 @@ function dedupe(ops: OutboxOp[]) {
 }
 
 async function pushOne(op: OutboxOp) {
+    if (op.kind === 'brain') {
+        const entry = await getBrainEntry(op.id)
+        if (!entry) return
+        await $fetch(`/api/brain/${op.id}`, {
+            method: 'PUT',
+            body: {
+                question: entry.question,
+                answer: entry.answer,
+                category: entry.category,
+                createdAt: entry.createdAt,
+                updatedAt: entry.updatedAt,
+                deletedAt: entry.deletedAt,
+            },
+        })
+        return
+    }
+
     if (op.kind === 'conversation') {
         const conversation = await getConversation(op.id)
         if (!conversation) return // deleted locally before it ever reached the server
@@ -179,6 +206,30 @@ async function pull(userId: string) {
     return pulled
 }
 
+/** The personal brain: same rules as conversations — newer change wins, deletions travel. */
+async function pullBrain(userId: string) {
+    // An empty brain on this device (new phone, or after sign-out) asks for everything.
+    const empty = (await listBrain(userId)).length === 0
+    const since = empty ? null : readSince(userId, 'brain')
+
+    const response = await $fetch<{ data: Array<Omit<BrainEntry, 'userId'>> }>('/api/brain', {
+        query: since ? { since } : undefined,
+    })
+
+    let newest = since ?? ''
+    for (const remote of response.data ?? []) {
+        if (remote.updatedAt > newest) newest = remote.updatedAt
+        const local = await getBrainEntry(remote.id)
+        // Last write wins; a device holding a newer, not yet uploaded change keeps it.
+        if (local && local.updatedAt >= remote.updatedAt) continue
+        // Deleted ones are kept as tombstones: the lookup and the panel skip them.
+        await putBrainEntry({ ...remote, userId, deletedAt: remote.deletedAt ?? null })
+    }
+
+    if (newest) writeSince(userId, newest, 'brain')
+    return response.data?.length ?? 0
+}
+
 /**
  * Messages of a conversation this device has never opened. Called when one is opened and nothing
  * is stored locally; with no connection the conversation simply shows as empty.
@@ -223,10 +274,12 @@ async function sync() {
     try {
         await push(userId)
         const pulled = await pull(userId)
+        const pulledBrain = await pullBrain(userId)
         await refresh(true)
+        await useBrain().load(true)
         lastError.value = null
         backoffMs = 0
-        logEvent(`sync ok: ${queuedBefore} sent, ${pulled} received, ${list.value.length} conversations on this device`)
+        logEvent(`sync ok: ${queuedBefore} sent, ${pulled} conversations and ${pulledBrain} brain entries received, ${list.value.length} conversations on this device`)
     }
     catch (err: any) {
         lastError.value = err?.data?.message || err?.message || 'Could not sync'

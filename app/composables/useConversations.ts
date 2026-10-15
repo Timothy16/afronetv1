@@ -92,6 +92,7 @@ async function clearLocal(userId: string) {
 
     await clearUserData(userId).catch(err => logEvent(`clearing local chats failed: ${err}`))
     forgetSince(userId)
+    useBrain().reset()
     list.value = []
     loadedFor = null
 }
