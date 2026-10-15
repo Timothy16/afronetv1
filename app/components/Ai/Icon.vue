@@ -50,6 +50,7 @@ const ICONS = {
   device: { paths: ['M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z', 'M11 18h2'] },
   offline: { paths: ['M3 3l18 18', 'M8.5 16.5a5 5 0 0 1 7 0', 'M5 13a10 10 0 0 1 4-2.5', 'M19 13a10 10 0 0 0-7-3'] },
   warning: { paths: ['M12 3 2 20h20L12 3z', 'M12 10v4', 'M12 17.5v.01'] },
+  apps: { paths: ['M4 4h6v6H4z', 'M14 4h6v6h-6z', 'M4 14h6v6H4z', 'M14 14h6v6h-6z'] },
 }
 
 const icon = computed(() => ICONS[props.name] ?? ICONS.check)
