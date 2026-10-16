@@ -24,10 +24,14 @@ export const aiQuota = {
   balance: 0,
   allowance: 0,
   renewsOn: '',
+  canBuild: false,
+  planCost: 0,
+  overhead: 0,
+  ceiling: 0,
   maxPerGeneration: 0,
-  enough: false,
   blockedReason: '',
 }
+
 
 // --- status ---------------------------------------------------------------
 // One label per state, used by every badge and filter, so an app in review cannot be
@@ -155,6 +159,70 @@ export function nameFromPrompt(prompt) {
     .join(' ')
   if (!words) return 'My App'
   return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+// --- what a description asks for ------------------------------------------
+// For the moment a balance will not cover a full app. Rather than refusing outright, the
+// wizard shows what was asked for and lets the developer untick what they can do without, so
+// a shorter description goes to the model — theirs, not a rewrite of theirs.
+//
+// No model is asked to produce this list. The description already contains it, reading it
+// back costs nothing, and nothing here can invent a feature that was never mentioned.
+
+/** Real boundaries: the end of a sentence, a line break, a bullet. */
+const HARD_BREAK = /[.!?;\n]+/
+
+/**
+ * Softer ones, inside a sentence.
+ *
+ * A comma before "and" or "then" separates two asks. A bare "and" does not — "who is present
+ * and who is absent" is one thing, and offering to remove half of it would be nonsense.
+ */
+const SOFT_BREAK = /,\s*(?:and\s+then|and\s+also|and|then|plus|also)\s+|\s+and\s+(?:then|also)\s+/i
+
+const BULLET = /^\s*(?:[-*•–—]|\d+[.)])\s*/
+const LEADING_JOIN = /^(?:and|also|then|plus)\s+/i
+
+const tidyClause = (piece) =>
+  String(piece)
+    .replace(BULLET, '')
+    .replace(LEADING_JOIN, '')
+    .replace(/[\s,]+$/, '')
+    .trim()
+
+const usable = (piece) => piece.length > 2 && /[a-z]/i.test(piece)
+
+/** The things a description asks for, in order, in the words they were asked in. */
+export function featuresFromPrompt(prompt) {
+  const text = String(prompt || '').trim()
+  if (!text) return []
+
+  const sentences = text.split(HARD_BREAK).map(tidyClause).filter(usable)
+
+  const clauses = []
+  for (const sentence of sentences) {
+    for (const part of sentence.split(SOFT_BREAK)) {
+      const cleaned = tidyClause(part)
+      if (usable(cleaned)) clauses.push(cleaned)
+    }
+  }
+
+  // A wall of text broken into thirty tickboxes is not a choice, it is a chore. Past that,
+  // fall back to whole sentences, which are coarser and far fewer.
+  const chosen = clauses.length > 20 ? sentences : clauses
+
+  return chosen.map((text, i) => ({ id: `f${i}`, text }))
+}
+
+/** The description again, with the unticked parts gone. Empty when nothing is kept. */
+export function promptFromFeatures(features, kept) {
+  const keep = kept instanceof Set ? kept : new Set(kept ?? [])
+
+  const parts = (features ?? [])
+    .filter((f) => keep.has(f.id))
+    .map((f) => f.text.charAt(0).toUpperCase() + f.text.slice(1))
+
+  return parts.length ? `${parts.join('. ')}.` : ''
 }
 
 // --- navigation -----------------------------------------------------------

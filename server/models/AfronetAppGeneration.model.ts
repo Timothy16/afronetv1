@@ -22,8 +22,22 @@ const AfronetAppGenerationSchema = new mongoose.Schema({
     /** The build this was for. Empty for a generation that never got as far as a build. */
     devAppId: { type: String, default: '', index: true },
 
-    /** create | change — what the call was for. */
+    /** create | change | plan — what the call was for. */
     kind: { type: String, default: 'create' },
+
+    /**
+     * What a plan said this would take, in output tokens, before anything was written.
+     *
+     * On a plan row it is what the plan said. On the generation that followed it is copied
+     * across from that plan, so the estimate and the real cost sit on the same row and the
+     * system can be asked how often its own estimates were right. Copied from the stored plan
+     * rather than taken from the browser, or the answer would be whatever the browser said.
+     */
+    estimateMin: { type: Number, default: 0 },
+    estimateMax: { type: Number, default: 0 },
+
+    /** The plan this generation was built from, when there was one. */
+    planId: { type: String, default: '' },
 
     model: { type: String, required: true },
 
@@ -43,6 +57,16 @@ const AfronetAppGenerationSchema = new mongoose.Schema({
     error: { type: String, default: '' },
 
     ok: { type: Boolean, default: true },
+
+    /**
+     * How much of this row the developer actually paid for.
+     *
+     * Usually the whole of it. Zero when the model produced output we then rejected — a
+     * truncation, or a reply that was not a document — because the budget that caused it was
+     * ours to set. The cost above stays true either way, so the books still match the Console;
+     * this is the column that says who bore it.
+     */
+    charged: { type: Number, default: 0 },
 
     /** How long the call took, in milliseconds. */
     ms: { type: Number, default: 0 },

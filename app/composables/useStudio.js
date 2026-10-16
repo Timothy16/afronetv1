@@ -243,6 +243,19 @@ export function useStudio() {
     return app
   }
 
+  /**
+   * Asks the model what the description would take to build, before building it.
+   *
+   * Costs the developer tokens, so the balance it returns is the one after the call — which
+   * is also the one the estimate has to be compared against.
+   */
+  const planDevApp = async ({ prompt, name }) => {
+    const res = await apiFetch('/api/studio/plan', { method: 'POST', body: { prompt, name } })
+    const plan = res?.data
+    if (plan?.tokens) credits.value = { ...plan.tokens }
+    return plan
+  }
+
   // --- the quota ----------------------------------------------------------
   // Read from the server, which is also what enforces it. The browser shows the number; it has
   // no say in it, because a count kept here is a suggestion and the API key is not.
@@ -397,6 +410,7 @@ export function useStudio() {
     liveStats,
     unpublishedChanges,
     createDevApp,
+    planDevApp,
     updateDevApp,
     updateDevAppSoon,
     flushDevApp,

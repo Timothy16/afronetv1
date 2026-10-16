@@ -12,7 +12,7 @@
 
 import { AfronetAppGeneration } from '../models/AfronetAppGeneration.model'
 import { SDK_RULES, withSdk } from './appSdk'
-import { MAX_OUTPUT_TOKENS, spendTokens } from './tokenAllowance'
+import { MAX_OUTPUT_TOKENS, MIN_OUTPUT_TOKENS, spendTokens } from './tokenAllowance'
 
 /** The model that writes the apps. Capable enough to one-shot a working app, cheap enough to ship on. */
 export const GENERATION_MODEL = 'claude-sonnet-5-5'
@@ -38,6 +38,7 @@ The app runs in a locked-down frame, and one that breaks these rules will not ru
 ${SDK_RULES}
 
 Build what was asked for, working, not a mockup: real interaction, real state, sensible empty states, and nothing that pretends to do something it cannot.
+Do not embed large bodies of content. If the app needs questions, words, facts, recipes or examples, include a handful as a starting point and let the person add their own. An app is a tool, not a textbook — this is what makes the difference between finishing and being cut off.
 Design for a phone first — the audience is Nigerian students on mid-range Android devices.`
 
 /** The colour an app is themed in, matching the tone the developer picked in Studio. */
@@ -61,6 +62,26 @@ function styleNotes(config: any) {
         notes.push('This app does not save anything between visits. Do not call afronet.storage, and do not imply that anything is kept.')
     }
     return notes.join('\n')
+}
+
+/**
+ * Told to the model on every build.
+ *
+ * This used to be added only when a developer was short of tokens, which had it backwards: a
+ * build with the full ceiling was given no size instruction at all, so the model wrote until
+ * the cap guillotined it. That is what cost a developer 16,824 tokens for an app that never
+ * arrived. A ceiling the model has not been told about is not a budget, it is a trapdoor.
+ *
+ * The character figure is rough — about three and a half characters per token — and is there
+ * to be aimed at, not met exactly.
+ */
+function budgetNotes(maxOutputTokens: number) {
+    const chars = Math.round((maxOutputTokens * 3.5) / 1000) * 1000
+
+    return `
+YOUR BUDGET: the whole document must come in under about ${chars.toLocaleString('en-GB')} characters. This is a hard limit — output past it is discarded and the app is lost.
+Build fewer things and finish them. One screen that works beats three that are half-written, and a document that runs out before its closing tag does not run at all.
+If you are running long, stop adding and close what you have. A smaller complete app is the right answer; an unfinished large one is worth nothing.`
 }
 
 export interface GenerationResult {
@@ -88,17 +109,31 @@ export async function generateApp(opts: {
     userId: any
     devAppId?: string
     kind?: 'create' | 'change'
+    /** The room this generation gets, from the balance paying for it. Defaults to the ceiling. */
+    maxOutputTokens?: number
+    /** The plan this was built from, and what it predicted, so the two sit on one row. */
+    planId?: string
+    estimateMin?: number
+    estimateMax?: number
 }): Promise<GenerationResult> {
     const { claudeApiKey } = useRuntimeConfig()
     if (!claudeApiKey) {
         throw createError({ statusCode: 500, message: 'No Claude API key is configured on the server' })
     }
 
+    // Never above the ceiling, never below the floor: the caller decides the budget, but the
+    // bounds are this file's to keep, so a bad figure cannot run up a bill or buy nothing.
+    const maxTokens = Math.min(
+        MAX_OUTPUT_TOKENS,
+        Math.max(MIN_OUTPUT_TOKENS, Math.floor(opts.maxOutputTokens ?? MAX_OUTPUT_TOKENS)),
+    )
+
     const system = `You write small, self-contained web apps that run inside Afronet, a Nigerian student app.
 
 ${RULES}
 
-${styleNotes(opts.config)}`
+${styleNotes(opts.config)}
+${budgetNotes(maxTokens)}`
 
     const ask = `The app is called "${opts.name}".
 
@@ -107,11 +142,18 @@ ${opts.prompt}`
 
     const started = Date.now()
 
-    const record = async (row: any) => {
-        // The tokens come off the balance here, beside the ledger row, so a generation cannot
-        // be recorded without being charged for — including one that failed, which still cost
-        // us the moment the model started writing.
-        await spendTokens(opts.userId, (row.inputTokens ?? 0) + (row.outputTokens ?? 0))
+    /**
+     * Writes the ledger row, and charges for it when there is something to charge for.
+     *
+     * The developer pays for apps, not for output we reject. A truncation, or a reply that is
+     * not a document, is the model doing work we then throw away — most often because our own
+     * budget was wrong — and billing somebody 16,824 tokens for nothing is indefensible even
+     * though we really were charged for it. So the row keeps the real cost, which is what has
+     * to agree with the Console, and `charged` records whether the developer paid it.
+     */
+    const record = async (row: any, charge = true) => {
+        const used = (row.inputTokens ?? 0) + (row.outputTokens ?? 0)
+        if (charge) await spendTokens(opts.userId, used)
 
         try {
             await AfronetAppGeneration.create({
@@ -120,7 +162,11 @@ ${opts.prompt}`
                 kind: opts.kind ?? 'create',
                 model: GENERATION_MODEL,
                 prompt: String(opts.prompt).slice(0, 2000),
+                planId: opts.planId ?? '',
+                estimateMin: opts.estimateMin ?? 0,
+                estimateMax: opts.estimateMax ?? 0,
                 ms: Date.now() - started,
+                charged: charge ? used : 0,
                 ...row,
             })
         } catch {
@@ -140,7 +186,7 @@ ${opts.prompt}`
             },
             body: JSON.stringify({
                 model: GENERATION_MODEL,
-                max_tokens: MAX_OUTPUT_TOKENS,
+                max_tokens: maxTokens,
                 system,
                 messages: [{ role: 'user', content: ask }],
             }),
@@ -177,16 +223,20 @@ ${opts.prompt}`
     html = withSdk(html)
 
     if (!/<html[\s>]/i.test(html)) {
-        await record({ ok: false, inputTokens, outputTokens, costUsd, stopReason, error: 'no HTML document in the reply' })
+        await record({ ok: false, inputTokens, outputTokens, costUsd, stopReason, error: 'no HTML document in the reply' }, false)
         throw createError({ statusCode: 502, message: 'The app did not come back as a working document. Try describing it again.' })
     }
 
     // Truncated output is a half-written app. It is cheaper to say so than to ship it.
     if (stopReason === 'max_tokens') {
-        await record({ ok: false, inputTokens, outputTokens, costUsd, stopReason, error: 'ran past the output ceiling' })
+        // Not charged. The budget was ours to set, and it was too small.
+        await record({ ok: false, inputTokens, outputTokens, costUsd, stopReason, error: 'ran past the output ceiling' }, false)
         throw createError({
             statusCode: 502,
-            message: 'That app came out longer than the limit allows, so it was cut short. Try describing something smaller.',
+            message:
+                maxTokens < MAX_OUTPUT_TOKENS
+                    ? 'This needed more room than we estimated, so it was cut short. You have not been charged for it — press Generate again and it will be given everything your balance allows.'
+                    : 'This came out longer than any Afronet app can be, so it was cut short. You have not been charged for it. Describe something smaller, or remove a feature.',
         })
     }
 

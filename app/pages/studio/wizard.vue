@@ -50,6 +50,13 @@
         :failure="failure"
         :credits-left="creditsLeft"
         :credits="credits"
+        :features="features"
+        :kept="kept"
+        :trimmed="trimmed"
+        :planned="planned"
+        :plan-error="planError"
+        :estimate="estimate"
+        @toggle="toggleFeature"
       />
 
       <div class="mt-8 flex flex-wrap justify-end gap-2 border-t border-[#e4e4de] pt-5">
@@ -57,8 +64,19 @@
           <UiButton :disabled="!canContinue" @click="step += 1">Continue</UiButton>
         </template>
 
+        <template v-else-if="phase === 'idle' && !planned">
+          <UiButton size="lg" :disabled="!credits.canBuild || planning" @click="runPlan">
+            <template #icon>
+              <UiSpinner v-if="planning" />
+              <i v-else class="fa-solid fa-scale-balanced text-[12px]" aria-hidden="true"></i>
+            </template>
+            {{ planning ? 'Working it out…' : `Check what this takes · ${(credits.planCost ?? 0).toLocaleString()} tokens` }}
+          </UiButton>
+        </template>
+
         <template v-else-if="phase === 'idle'">
-          <UiButton size="lg" :disabled="!credits.enough" @click="start">
+          <UiButton variant="secondary" @click="editDescription">Edit description</UiButton>
+          <UiButton size="lg" :disabled="!canGenerate" @click="start">
             <template #icon><i class="fa-solid fa-wand-magic-sparkles text-[12px]" aria-hidden="true"></i></template>
             Generate app
           </UiButton>
@@ -78,14 +96,21 @@
 </template>
 
 <script setup>
-import { appTypes, findTemplate, generateStages, nameFromPrompt } from '~/data/studio'
+import {
+  appTypes,
+  featuresFromPrompt,
+  findTemplate,
+  generateStages,
+  nameFromPrompt,
+  promptFromFeatures,
+} from '~/data/studio'
 
 definePageMeta({ layout: 'studio' })
 useHead({ title: 'Build with AI · Afronet Studio' })
 
 const route = useRoute()
 
-const { credits, creditsLeft, createDevApp, notify } = useStudio()
+const { credits, creditsLeft, createDevApp, planDevApp, notify } = useStudio()
 
 const stepNames = ['Idea', 'Type', 'Design', 'Generate']
 const lastStep = stepNames.length - 1
@@ -115,8 +140,123 @@ const canContinue = computed(() => (step.value === 0 ? draft.value.prompt.trim()
 const summary = computed(() => ({
   prompt: draft.value.prompt,
   type: appTypes.find((t) => t.id === draft.value.category)?.label ?? '',
+  // From what they wrote, not from what survives trimming. The name is theirs either way.
   name: draft.value.design.name.trim() || nameFromPrompt(draft.value.prompt),
 }))
+
+// --- what this will take -------------------------------------------------
+// Every build is planned first: the same model that will write the app, asked what each part
+// of the description would cost, before anything is spent on writing it. The answer sets the
+// budget for the build and gates the button.
+//
+// Trimming does not make a build cheaper by itself — it makes the app fit the room it is
+// given, which is the difference between a small working app and a large one cut off halfway.
+// If the plan cannot be had, the description is split mechanically instead: free, their own
+// words, and no idea what anything costs.
+
+const plan = ref(null)
+const planning = ref(false)
+const planError = ref('')
+
+/**
+ * Set after a build fails, and it stops the plan's estimate binding the next attempt.
+ *
+ * A truncation means the estimate was too low. Retrying against the same figure would hand
+ * the build the same room and cut it off in the same place. The plan stays on screen — it is
+ * still the best account of what was asked for — but the budget falls back to the balance and
+ * the ceiling, which is what the server does when there is no plan at all.
+ */
+const retryUnbounded = ref(false)
+
+const planned = computed(() => Array.isArray(plan.value?.features) && plan.value.features.length > 0)
+
+const features = computed(() =>
+  planned.value ? plan.value.features : featuresFromPrompt(draft.value.prompt),
+)
+
+const kept = ref([])
+
+watch(
+  features,
+  (list) => {
+    kept.value = list.map((f) => f.id)
+  },
+  { immediate: true },
+)
+
+// Editing the description makes the plan describe an app that no longer exists, so it goes.
+watch(
+  () => draft.value.prompt,
+  () => {
+    plan.value = null
+    planError.value = ''
+  },
+)
+
+const toggleFeature = (id) => {
+  kept.value = kept.value.includes(id) ? kept.value.filter((k) => k !== id) : [...kept.value, id]
+}
+
+const trimmed = computed(() => promptFromFeatures(features.value, kept.value))
+
+/**
+ * What the ticked features are expected to cost, all in.
+ *
+ * The overhead is added here because the comparison that matters is against the balance, and
+ * the description and the rules come out of the same balance before a line of the app is
+ * written. Comparing the bare feature estimate instead would enable the button about 1,600
+ * tokens too early.
+ */
+const estimate = computed(() => {
+  if (!planned.value) return { min: 0, max: 0 }
+
+  const ticked = features.value.filter((f) => kept.value.includes(f.id))
+  const overhead = credits.value.overhead ?? 0
+
+  return {
+    min: ticked.reduce((n, f) => n + (f.min ?? 0), 0) + overhead,
+    max: ticked.reduce((n, f) => n + (f.max ?? 0), 0) + overhead,
+  }
+})
+
+const runPlan = async () => {
+  planning.value = true
+  planError.value = ''
+
+  try {
+    plan.value = await planDevApp({ prompt: draft.value.prompt, name: summary.value.name })
+  } catch (e) {
+    // It was still paid for if the model answered, so say what happened rather than silently
+    // falling back to the free list that is already on screen.
+    planError.value = e?.data?.message ?? e?.message ?? 'The plan could not be worked out.'
+  } finally {
+    planning.value = false
+  }
+}
+
+/** What actually goes to the model. The full description unless the balance is short. */
+const promptToBuild = computed(() =>
+  planned.value && features.value.length ? trimmed.value : draft.value.prompt,
+)
+
+// The server asks for fifteen characters too. Checking it here is what keeps the button from
+// offering a generation that the server is only going to refuse.
+//
+// Once a plan has been bought the button is also held shut until the ticked estimate fits.
+// Without a plan there is nothing to hold it against, so it stays open — the developer knows
+// less, which is the trade they made by not buying one.
+const canGenerate = computed(() => {
+  if (!credits.value.canBuild) return false
+  if (promptToBuild.value.trim().length < 15) return false
+  if (!planned.value) return false
+
+  // Both bounds, because they fail differently: over the balance is "not this week", over the
+  // ceiling is "not here at all", and only the second is true at any allowance.
+  if (estimate.value.max > creditsLeft.value) return false
+  if (estimate.value.max - (credits.value.overhead ?? 0) > (credits.value.ceiling ?? Infinity)) return false
+
+  return true
+})
 
 const back = () => {
   if (step.value > 0) {
@@ -130,6 +270,9 @@ const editDescription = () => {
   phase.value = 'idle'
   stage.value = 0
   step.value = 0
+  plan.value = null
+  planError.value = ''
+  retryUnbounded.value = false
 }
 
 // The run. Client-only, and every timer is cleared on the way out, so a developer who
@@ -168,8 +311,12 @@ const start = async () => {
   try {
     const app = await createDevApp({
       name: summary.value.name,
-      prompt: draft.value.prompt,
+      prompt: promptToBuild.value,
       category: draft.value.category,
+      // Lets the server put what the plan predicted on the same row as what it really cost —
+      // and, on a retry after it was cut short, deliberately withheld so the budget is not
+      // held down by an estimate that has already been proved wrong.
+      planId: retryUnbounded.value ? '' : (plan.value?.planId ?? ''),
       tone: draft.value.design.tone,
       fontScale: draft.value.design.fontScale ? 'large' : 'normal',
       highContrast: draft.value.design.highContrast,
@@ -191,6 +338,8 @@ const start = async () => {
     const message = e?.data?.message ?? e?.message ?? ''
     phase.value = e?.statusCode === 429 || e?.data?.statusCode === 429 ? 'limit' : 'failed'
     failure.value = message
+    // Whatever went wrong, the next attempt should not be bound by the estimate that led here.
+    retryUnbounded.value = true
     if (message) notify(message, 'error')
   }
 }

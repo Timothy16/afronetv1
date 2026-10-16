@@ -14,7 +14,7 @@ import { AfronetDevApp } from '../../../models/AfronetDevApp.model'
 import { buildFromWizard } from '../../../utils/devApps'
 import { generateApp } from '../../../utils/generateApp'
 import { filesToDoc, sizeOf } from '../../../utils/packageFormat'
-import { MAX_PROMPT_CHARS, requireTokens } from '../../../utils/tokenAllowance'
+import { budgetFor, MAX_PROMPT_CHARS, requireTokens } from '../../../utils/tokenAllowance'
 import { validateApp } from '../../../utils/validateApp'
 
 export default defineEventHandler(async (event) => {
@@ -31,11 +31,22 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 400, message: 'Describe the app in a bit more detail' })
     }
 
-    // Before anything is spent. The balance has to cover the most a generation can take, so
-    // it can never go negative — and a refusal here costs nothing and says when it lifts.
-    await requireTokens(session.userId)
+    // Before anything is spent, and it can never go negative. How much room this build gets is
+    // decided further down, from what the plan estimated rather than from a flat ceiling.
+    const tokens = await requireTokens(session.userId)
 
     const doc: any = { ...buildFromWizard(answers), userId: session.userId }
+
+    // What a plan said this would take, if one was bought. Read from the stored plan rather
+    // than from the request: an estimate the browser could set is an estimate that proves
+    // nothing when it is later compared against the real cost.
+    const plan = answers?.planId
+        ? await AfronetAppGeneration.findOne({
+            _id: String(answers.planId),
+            userId: session.userId,
+            kind: 'plan',
+        }).select('estimateMin estimateMax').lean<any>().catch(() => null)
+        : null
 
     // If this throws, no build is created. A draft with no code is a dead record a developer
     // would have to find and delete themselves.
@@ -46,6 +57,10 @@ export default defineEventHandler(async (event) => {
         userId: session.userId,
         devAppId: doc._id,
         kind: 'create',
+        maxOutputTokens: budgetFor(tokens.balance, plan?.estimateMax ?? 0),
+        planId: plan ? String(answers.planId) : '',
+        estimateMin: plan?.estimateMin ?? 0,
+        estimateMax: plan?.estimateMax ?? 0,
     })
 
     // Checked here as well as at publish. The same gate either way, but a developer who hears
